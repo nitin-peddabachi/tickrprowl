@@ -12,3 +12,7 @@ node_modules/
 
 # macOS
 .DS_Store
+
+# Fidelity portfolio exports — contain personal financial data
+Portfolio_Positions_*.csv
+*.portfolio.csv

@@ -8,6 +8,14 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# Kill anything already on our ports so restarts always work cleanly
+echo "Clearing ports 8000 and 3000..."
+lsof -ti :8000 | xargs kill -9 2>/dev/null
+lsof -ti :3000 | xargs kill -9 2>/dev/null
+pkill -f "uvicorn app.main" 2>/dev/null
+pkill -f "next dev" 2>/dev/null
+sleep 1
+
 # Start backend
 echo "Starting backend..."
 cd "$SCRIPT_DIR/backend"
@@ -15,14 +23,21 @@ python3 -m uvicorn app.main:app --reload > /tmp/stockr-backend.log 2>&1 &
 BACKEND_PID=$!
 echo $BACKEND_PID > /tmp/stockr-backend.pid
 
-# Wait for backend to be ready
-for i in {1..10}; do
+# Wait for backend to be ready (up to 20s)
+BACKEND_READY=0
+for i in {1..20}; do
   if curl -s http://localhost:8000/ > /dev/null 2>&1; then
     echo "Backend ready at http://localhost:8000"
+    BACKEND_READY=1
     break
   fi
   sleep 1
 done
+if [ $BACKEND_READY -eq 0 ]; then
+  echo "Backend failed to start. Last log:"
+  tail -20 /tmp/stockr-backend.log
+  exit 1
+fi
 
 # Start frontend
 echo "Starting frontend..."
@@ -31,8 +46,8 @@ npm run dev > /tmp/stockr-frontend.log 2>&1 &
 FRONTEND_PID=$!
 echo $FRONTEND_PID > /tmp/stockr-frontend.pid
 
-# Wait for frontend to be ready
-for i in {1..15}; do
+# Wait for frontend to be ready (up to 30s)
+for i in {1..30}; do
   if curl -s http://localhost:3000/ > /dev/null 2>&1; then
     echo "Frontend ready at http://localhost:3000"
     break

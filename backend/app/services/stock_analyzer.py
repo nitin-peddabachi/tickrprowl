@@ -1,6 +1,7 @@
 import yfinance as yf
 import pandas as pd
 import ta
+from app.services import cache as _cache
 
 
 def get_price_history(ticker: str, period: str = "6mo") -> list:
@@ -53,6 +54,10 @@ def get_price_history(ticker: str, period: str = "6mo") -> list:
 
 
 def get_stock_analysis(ticker: str) -> dict:
+    cached = _cache.get(ticker.upper())
+    if cached:
+        return cached
+
     stock = yf.Ticker(ticker)
 
     # Price history (6 months for technical indicators)
@@ -100,19 +105,49 @@ def get_stock_analysis(ticker: str) -> dict:
     except Exception:
         quarterly_revenue = {}
 
+    # Next earnings date
+    next_earnings_date = None
+    try:
+        cal = stock.calendar
+        if isinstance(cal, dict):
+            dates = cal.get("Earnings Date", [])
+            if dates:
+                d = dates[0]
+                next_earnings_date = d.strftime("%Y-%m-%d") if hasattr(d, "strftime") else str(d)[:10]
+    except Exception:
+        pass
+
     # Oversold score (0-100, higher = more oversold)
     oversold_score = _calculate_oversold_score(
         rsi=rsi,
         bb_percent=bb_percent,
         pct_from_high=pct_from_high,
         pe_ratio=pe_ratio,
+        forward_pe=forward_pe,
         debt_to_equity=debt_to_equity,
         revenue_growth=revenue_growth,
+        macd_line=macd_line,
+        signal_line=signal_line,
     )
 
-    signal = _get_signal(oversold_score, rsi)
+    pct_from_low = round((current_price - price_52w_low) / price_52w_low * 100, 2) if price_52w_low else 0
 
-    return {
+    signal = _get_signal(oversold_score, rsi)
+    absolute_steal = _check_absolute_steal(
+        rsi=rsi,
+        oversold_score=oversold_score,
+        pe_ratio=pe_ratio,
+        revenue_growth=revenue_growth,
+        debt_to_equity=debt_to_equity,
+    )
+    overbought = _check_overbought(
+        rsi=rsi,
+        bb_percent=bb_percent,
+        pct_from_low=pct_from_low,
+        pe_ratio=pe_ratio,
+    )
+
+    result = {
         "ticker": ticker.upper(),
         "company_name": company_name,
         "sector": sector,
@@ -139,10 +174,20 @@ def get_stock_analysis(ticker: str) -> dict:
         "quarterly_revenue_bn": quarterly_revenue,
         "oversold_score": oversold_score,
         "signal": signal,
+        "next_earnings_date": next_earnings_date,
+        "is_absolute_steal": absolute_steal["is_absolute_steal"],
+        "steal_conditions": absolute_steal["conditions"],
+        "is_overbought": overbought["is_overbought"],
+        "overbought_conditions": overbought["conditions"],
     }
+    _cache.set(ticker.upper(), result)
+    return result
 
 
-def _calculate_oversold_score(rsi, bb_percent, pct_from_high, pe_ratio, debt_to_equity, revenue_growth) -> int:
+def _calculate_oversold_score(
+    rsi, bb_percent, pct_from_high, pe_ratio, forward_pe,
+    debt_to_equity, revenue_growth, macd_line, signal_line
+) -> int:
     score = 0
 
     # RSI (max 40 pts) — below 30 is oversold
@@ -171,9 +216,43 @@ def _calculate_oversold_score(rsi, bb_percent, pct_from_high, pe_ratio, debt_to_
     if revenue_growth and revenue_growth > 0.05:
         score += 10  # Still growing
     if pe_ratio and pe_ratio < 15:
-        score += 10  # Cheap valuation
+        score += 10  # Cheap trailing valuation
+    elif forward_pe and forward_pe < 15:
+        score += 7   # Cheap on forward earnings (partial credit)
+
+    # MACD bullish crossover bonus (+5 pts) — momentum turning positive
+    if macd_line is not None and signal_line is not None and macd_line > signal_line:
+        score += 5
 
     return min(score, 100)
+
+
+def _check_absolute_steal(rsi, oversold_score, pe_ratio, revenue_growth, debt_to_equity) -> dict:
+    # Each condition must be independently met — a quality company temporarily beaten down
+    conditions = {
+        "rsi_oversold": bool(rsi < 30),                                         # Technically oversold
+        "strong_signal": bool(oversold_score >= 70),                            # Overall score confirms it
+        "cheap_valuation": bool(pe_ratio is not None and pe_ratio < 15),        # Fundamentally cheap
+        "growing_revenue": bool(revenue_growth is not None and revenue_growth > 0),  # Business still growing
+        "low_leverage": bool(debt_to_equity is None or debt_to_equity < 200),   # Not overleveraged (D/E < 2x)
+    }
+    return {
+        "is_absolute_steal": bool(all(conditions.values())),
+        "conditions": conditions,
+    }
+
+
+def _check_overbought(rsi, bb_percent, pct_from_low, pe_ratio) -> dict:
+    conditions = {
+        "rsi_high": bool(rsi > 70),                          # Technically stretched
+        "near_upper_band": bool(bb_percent > 0.9),           # Near upper Bollinger Band
+        "far_from_low": bool(pct_from_low > 25),             # >25% above 52w low
+        "high_valuation": bool(pe_ratio is not None and pe_ratio > 35),  # Expensive
+    }
+    return {
+        "is_overbought": bool(all(conditions.values())),
+        "conditions": conditions,
+    }
 
 
 def _get_signal(oversold_score: int, rsi: float) -> str:

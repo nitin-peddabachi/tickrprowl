@@ -53,11 +53,21 @@ export default function WatchlistCard({ item, onRemove }: Props) {
       <div className="flex items-center justify-between p-5">
         <div className="flex items-center gap-4">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-xl font-bold text-white">{ticker}</h2>
               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${signalClass}`}>
                 {signal}
               </span>
+              {analysis?.is_absolute_steal && (
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full border border-amber-400/40 bg-amber-400/10 text-amber-300">
+                  🔥 Absolute Steal
+                </span>
+              )}
+              {analysis?.is_overbought && (
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full border border-red-500/40 bg-red-500/10 text-red-300">
+                  ⚠️ Overbought
+                </span>
+              )}
             </div>
             <p className="text-gray-500 text-sm">{company_name} · {sector}</p>
           </div>

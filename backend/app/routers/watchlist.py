@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from app.models.database import get_db, WatchlistItem
 from app.services.stock_analyzer import get_stock_analysis
 
@@ -19,19 +20,33 @@ class WatchlistAdd(BaseModel):
 @router.get("/")
 def get_watchlist(db: Session = Depends(get_db)):
     items = db.query(WatchlistItem).all()
-    results = []
-    for item in items:
-        analysis = get_stock_analysis(item.ticker)
-        results.append({
+    if not items:
+        return []
+
+    # Fetch all analyses concurrently
+    analyses: dict[str, dict] = {}
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        futures = {pool.submit(get_stock_analysis, item.ticker): item.ticker for item in items}
+        for future in as_completed(futures):
+            ticker = futures[future]
+            try:
+                result = future.result()
+                analyses[ticker] = result if "error" not in result else None
+            except Exception:
+                analyses[ticker] = None
+
+    return [
+        {
             "ticker": item.ticker,
             "company_name": item.company_name,
             "sector": item.sector,
             "notes": item.notes,
             "target_price": item.target_price,
             "added_at": item.added_at.isoformat() if item.added_at else None,
-            "analysis": analysis if "error" not in analysis else None,
-        })
-    return results
+            "analysis": analyses.get(item.ticker),
+        }
+        for item in items
+    ]
 
 
 @router.post("/")
