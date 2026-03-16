@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import axios from "axios";
+import { useRouter } from "next/navigation";
 import PriceChart from "@/components/PriceChart";
 
 interface Props {
@@ -23,6 +24,7 @@ function fmt(val: any, decimals = 2) {
 
 export default function WatchlistCard({ item, onRemove }: Props) {
   const { ticker, company_name, sector, notes, target_price, added_at, analysis } = item;
+  const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [editNotes, setEditNotes] = useState(notes || "");
   const [editTarget, setEditTarget] = useState(target_price || "");
@@ -54,7 +56,7 @@ export default function WatchlistCard({ item, onRemove }: Props) {
         <div className="flex items-center gap-4">
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-xl font-bold text-white">{ticker}</h2>
+              <h2 onClick={() => router.push(`/stock/${ticker}`)} className="text-xl font-bold text-white hover:text-emerald-400 cursor-pointer transition-colors">{ticker}</h2>
               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${signalClass}`}>
                 {signal}
               </span>
