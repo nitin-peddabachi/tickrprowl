@@ -1,6 +1,7 @@
 "use client";
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import PriceChart from "@/components/PriceChart";
 
 interface Props {
   stock: any;
@@ -127,6 +128,9 @@ export default function StockCard({ stock }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Price History Chart */}
+      <PriceChart ticker={stock.ticker} />
 
       {/* Quarterly Revenue Chart */}
       {revenueData.length > 0 && (
