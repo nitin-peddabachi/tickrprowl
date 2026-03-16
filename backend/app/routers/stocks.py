@@ -1,20 +1,31 @@
+import asyncio
 from fastapi import APIRouter, HTTPException
 from app.services.stock_analyzer import get_stock_analysis
 
 router = APIRouter()
 
-
-@router.get("/{ticker}")
-def analyze_stock(ticker: str):
-    result = get_stock_analysis(ticker.upper())
-    if "error" in result:
-        raise HTTPException(status_code=404, detail=result["error"])
-    return result
+# Preset lists
+PRESETS = {
+    "sp500_sample": [
+        "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "BRK-B", "UNH", "JPM",
+        "JNJ", "V", "PG", "MA", "HD", "CVX", "MRK", "ABBV", "PEP", "KO",
+        "BAC", "PFE", "AVGO", "COST", "TMO", "DIS", "CSCO", "ACN", "MCD", "ADBE",
+        "WMT", "CRM", "NFLX", "AMD", "INTC", "QCOM", "TXN", "NEE", "PM", "RTX",
+    ],
+    "tech": [
+        "AAPL", "MSFT", "GOOGL", "NVDA", "META", "TSLA", "AMD", "INTC", "QCOM",
+        "ADBE", "CRM", "AVGO", "TXN", "ORCL", "IBM", "SNOW", "PLTR", "UBER", "LYFT", "SHOP",
+    ],
+    "value": [
+        "BRK-B", "JPM", "JNJ", "PG", "KO", "PEP", "MCD", "WMT", "CVX", "XOM",
+        "BAC", "WFC", "C", "GS", "MS", "T", "VZ", "MMM", "CAT", "DE",
+    ],
+}
 
 
 @router.get("/batch/scan")
 def scan_stocks(tickers: str):
-    """Scan multiple tickers, e.g. ?tickers=AAPL,MSFT,TSLA"""
+    """Scan comma-separated tickers, e.g. ?tickers=AAPL,MSFT,TSLA"""
     ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     results = []
     for ticker in ticker_list:
@@ -23,3 +34,31 @@ def scan_stocks(tickers: str):
             results.append(data)
     results.sort(key=lambda x: x["oversold_score"], reverse=True)
     return results
+
+
+@router.get("/batch/preset/{preset_name}")
+def scan_preset(preset_name: str):
+    """Scan a preset list of tickers"""
+    ticker_list = PRESETS.get(preset_name)
+    if not ticker_list:
+        raise HTTPException(status_code=404, detail=f"Preset '{preset_name}' not found. Available: {list(PRESETS.keys())}")
+    results = []
+    for ticker in ticker_list:
+        data = get_stock_analysis(ticker)
+        if "error" not in data:
+            results.append(data)
+    results.sort(key=lambda x: x["oversold_score"], reverse=True)
+    return results
+
+
+@router.get("/presets")
+def list_presets():
+    return {name: tickers for name, tickers in PRESETS.items()}
+
+
+@router.get("/{ticker}")
+def analyze_stock(ticker: str):
+    result = get_stock_analysis(ticker.upper())
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
