@@ -8,8 +8,12 @@ def get_price_history(ticker: str, period: str = "6mo") -> list:
     if period not in valid_periods:
         period = "6mo"
 
+    # Always fetch at least 3mo so BB (window=20) and RSI (window=14) have
+    # enough warm-up data, then trim to the requested period at the end.
+    fetch_period = period if period not in {"1mo"} else "3mo"
+
     stock = yf.Ticker(ticker)
-    hist = stock.history(period=period)
+    hist = stock.history(period=fetch_period)
     if hist.empty:
         return []
 
@@ -23,6 +27,11 @@ def get_price_history(ticker: str, period: str = "6mo") -> list:
     bb_upper = bb.bollinger_hband()
     bb_lower = bb.bollinger_lband()
     bb_mid = bb.bollinger_mavg()
+
+    # Trim to requested period
+    if period == "1mo":
+        cutoff = hist.index[-1] - pd.DateOffset(months=1)
+        hist = hist[hist.index >= cutoff]
 
     result = []
     for date, row in hist.iterrows():
