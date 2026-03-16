@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, String, Float, DateTime
+from sqlalchemy import create_engine, Column, String, Float, DateTime, Boolean, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
@@ -19,6 +19,31 @@ class WatchlistItem(Base):
     notes = Column(String, nullable=True)
     target_price = Column(Float, nullable=True)
     added_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Alert(Base):
+    __tablename__ = "alerts"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    ticker = Column(String, index=True, nullable=False)
+    alert_type = Column(String, nullable=False)  # rsi_below | price_below | score_above
+    threshold = Column(Float, nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_triggered = Column(DateTime, nullable=True)
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    ticker = Column(String, nullable=False)
+    alert_type = Column(String, nullable=False)
+    threshold = Column(Float, nullable=False)
+    current_value = Column(Float, nullable=False)
+    message = Column(String, nullable=False)
+    is_read = Column(Boolean, default=False)
+    triggered_at = Column(DateTime, default=datetime.utcnow)
 
 
 def init_db():
