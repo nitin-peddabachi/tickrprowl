@@ -111,6 +111,7 @@ export default function ScannerTable({ stocks }: Props) {
   );
 
   return (
+    <>
     <div>
       {/* Sector filter + Export */}
       <div className="flex items-center justify-between mb-3">
@@ -228,6 +229,7 @@ export default function ScannerTable({ stocks }: Props) {
       </div>
     </div>
 
-    <StockModal ticker={selectedTicker} onClose={() => setSelectedTicker(null)} />
+      <StockModal ticker={selectedTicker} onClose={() => setSelectedTicker(null)} />
+    </>
   );
 }
