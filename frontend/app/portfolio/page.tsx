@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
@@ -40,6 +41,7 @@ const SECTOR_COLORS = [
 ];
 
 export default function PortfolioPage() {
+  const router = useRouter();
   const [positions, setPositions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
@@ -305,7 +307,7 @@ export default function PortfolioPage() {
                             {p.analysis?.is_absolute_steal && <span title="Absolute Steal">🔥</span>}
                             {p.analysis?.is_overbought && <span title="Overbought — consider trimming">⚠️</span>}
                             <div>
-                              <div className="font-bold text-white">{p.ticker}</div>
+                              <div onClick={() => router.push(`/stock/${p.ticker}`)} className="font-bold text-white hover:text-emerald-400 cursor-pointer transition-colors">{p.ticker}</div>
                               <div className="text-gray-500 text-xs truncate max-w-[160px]">{p.company_name}</div>
                             </div>
                           </div>
