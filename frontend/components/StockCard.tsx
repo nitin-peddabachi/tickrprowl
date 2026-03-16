@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import axios from "axios";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import PriceChart from "@/components/PriceChart";
 
@@ -27,6 +29,19 @@ function fmtMarketCap(val: number | null) {
 }
 
 export default function StockCard({ stock }: Props) {
+  const [watchlistStatus, setWatchlistStatus] = useState<"idle" | "adding" | "added" | "error">("idle");
+
+  const addToWatchlist = async () => {
+    setWatchlistStatus("adding");
+    try {
+      await axios.post("http://localhost:8000/api/watchlist/", { ticker: stock.ticker });
+      setWatchlistStatus("added");
+    } catch (e: any) {
+      const msg = e.response?.data?.detail || "";
+      setWatchlistStatus(msg.includes("already") ? "added" : "error");
+    }
+  };
+
   const revenueData = Object.entries(stock.quarterly_revenue_bn || {}).map(([date, val]) => ({
     quarter: date,
     revenue: val,
@@ -42,12 +57,28 @@ export default function StockCard({ stock }: Props) {
           <h2 className="text-2xl font-bold text-white">{stock.ticker}</h2>
           <p className="text-gray-400 text-sm">{stock.company_name} · {stock.sector}</p>
         </div>
-        <div className="text-right">
+        <div className="text-right flex flex-col items-end gap-2">
           <span className={`text-sm font-semibold px-3 py-1 rounded-full border ${signalClass}`}>
             {stock.signal}
           </span>
-          <p className="text-2xl font-bold text-white mt-2">${fmt(stock.current_price)}</p>
+          <p className="text-2xl font-bold text-white">${fmt(stock.current_price)}</p>
           <p className="text-sm text-gray-500">{fmt(stock.pct_from_52w_high)}% from 52w high</p>
+          <button
+            onClick={addToWatchlist}
+            disabled={watchlistStatus === "adding" || watchlistStatus === "added"}
+            className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+              watchlistStatus === "added"
+                ? "border-emerald-700 text-emerald-500 bg-emerald-500/10"
+                : watchlistStatus === "error"
+                ? "border-red-700 text-red-400"
+                : "border-gray-700 text-gray-400 hover:border-emerald-500 hover:text-emerald-400"
+            }`}
+          >
+            {watchlistStatus === "adding" ? "Adding..." :
+             watchlistStatus === "added" ? "In Watchlist" :
+             watchlistStatus === "error" ? "Error" :
+             "+ Watchlist"}
+          </button>
         </div>
       </div>
 
