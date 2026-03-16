@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface Props {
   stocks: any[];
@@ -64,6 +65,7 @@ function exportToCsv(stocks: any[]) {
 }
 
 export default function ScannerTable({ stocks }: Props) {
+  const router = useRouter();
   const [sortKey, setSortKey] = useState<SortKey>("oversold_score");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [filter, setFilter] = useState<string>("all");
@@ -171,7 +173,7 @@ export default function ScannerTable({ stocks }: Props) {
           </thead>
           <tbody className="divide-y divide-gray-800">
             {sorted.map((stock, i) => (
-              <tr key={stock.ticker} className="bg-gray-950 hover:bg-gray-900 transition-colors">
+              <tr key={stock.ticker} onClick={() => router.push(`/stock/${stock.ticker}`)} className="bg-gray-950 hover:bg-gray-900 transition-colors cursor-pointer">
                 <td className="px-4 py-3 text-gray-600">{i + 1}</td>
                 <td className="px-4 py-3">
                   <div className="font-bold text-white">{stock.ticker}</div>
