@@ -4,6 +4,35 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import WatchlistCard from "@/components/WatchlistCard";
 
+function exportWatchlistCsv(items: any[]) {
+  const headers = ["Ticker", "Company", "Sector", "Signal", "Score", "Price", "RSI", "P/E", "Rev Growth %", "Target Price", "Notes", "Added"];
+  const rows = items.map(i => {
+    const a = i.analysis;
+    return [
+      i.ticker,
+      `"${i.company_name ?? ""}"`,
+      `"${i.sector ?? ""}"`,
+      a?.signal ?? "",
+      a?.oversold_score ?? "",
+      a?.current_price ?? "",
+      a?.technicals?.rsi?.toFixed(2) ?? "",
+      a?.fundamentals?.pe_ratio?.toFixed(2) ?? "",
+      a?.fundamentals?.revenue_growth != null ? (a.fundamentals.revenue_growth * 100).toFixed(1) : "",
+      i.target_price ?? "",
+      `"${(i.notes ?? "").replace(/"/g, "'")}"`,
+      i.added_at?.slice(0, 10) ?? "",
+    ];
+  });
+  const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `stockr-watchlist-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function WatchlistPage() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,13 +61,24 @@ export default function WatchlistPage() {
 
   const strongBuys = items.filter((i) => i.analysis?.signal === "Strong Buy").length;
   const buys = items.filter((i) => i.analysis?.signal === "Buy").length;
+  const steals = items.filter((i) => i.analysis?.is_absolute_steal).length;
 
   return (
     <main className="min-h-screen bg-gray-950 text-white p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-emerald-400 mb-1">Watchlist</h1>
-          <p className="text-gray-400">Your saved stocks with live analysis</p>
+        <div className="flex items-start justify-between mb-8">
+          <div>
+            <h1 className="text-4xl font-bold text-emerald-400 mb-1">Watchlist</h1>
+            <p className="text-gray-400">Your saved stocks with live analysis</p>
+          </div>
+          {items.length > 0 && (
+            <button
+              onClick={() => exportWatchlistCsv(items)}
+              className="text-sm px-4 py-2 rounded-lg border border-gray-700 text-gray-400 hover:border-emerald-500 hover:text-emerald-400 transition-colors mt-2"
+            >
+              ↓ Export CSV
+            </button>
+          )}
         </div>
 
         {!loading && items.length > 0 && (
@@ -55,6 +95,12 @@ export default function WatchlistPage() {
               <p className="text-gray-500">Buy</p>
               <p className="text-2xl font-bold text-green-400">{buys}</p>
             </div>
+            {steals > 0 && (
+              <div className="bg-amber-400/5 border border-amber-400/30 rounded-lg px-4 py-3">
+                <p className="text-amber-500/80">Absolute Steal</p>
+                <p className="text-2xl font-bold text-amber-300">🔥 {steals}</p>
+              </div>
+            )}
           </div>
         )}
 

@@ -82,6 +82,74 @@ export default function StockCard({ stock }: Props) {
         </div>
       </div>
 
+      {/* Absolute Steal Banner */}
+      {stock.is_absolute_steal && (
+        <div className="mb-5 rounded-xl border border-amber-400/40 bg-amber-400/5 px-4 py-3">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-lg">🔥</span>
+            <span className="text-amber-300 font-bold tracking-wide">ABSOLUTE STEAL</span>
+            <span className="text-amber-500/70 text-xs">All conditions met</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {stock.steal_conditions && Object.entries(stock.steal_conditions as Record<string, boolean>).map(([key, passed]) => {
+              const labels: Record<string, string> = {
+                rsi_oversold: "RSI < 30",
+                strong_signal: "Score ≥ 70",
+                cheap_valuation: "P/E < 15",
+                growing_revenue: "Revenue Growing",
+                low_leverage: "Low Leverage",
+              };
+              return (
+                <span key={key} className={`text-xs px-2 py-0.5 rounded-full font-medium ${passed ? "bg-amber-400/15 text-amber-300" : "bg-gray-800 text-gray-500"}`}>
+                  {passed ? "✓" : "✗"} {labels[key] ?? key}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Overbought Warning */}
+      {stock.is_overbought && (
+        <div className="mb-5 rounded-xl border border-red-500/30 bg-red-500/5 px-4 py-3">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-sm">⚠️</span>
+            <span className="text-red-300 font-bold tracking-wide">OVERBOUGHT</span>
+            <span className="text-red-500/70 text-xs">Consider trimming</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {stock.overbought_conditions && Object.entries(stock.overbought_conditions as Record<string, boolean>).map(([key, passed]) => {
+              const labels: Record<string, string> = {
+                rsi_high: "RSI > 70",
+                near_upper_band: "Near Upper BB",
+                far_from_low: ">25% Above 52w Low",
+                high_valuation: "P/E > 35",
+              };
+              return (
+                <span key={key} className={`text-xs px-2 py-0.5 rounded-full font-medium ${passed ? "bg-red-400/15 text-red-300" : "bg-gray-800 text-gray-500"}`}>
+                  {passed ? "✓" : "✗"} {labels[key] ?? key}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Earnings Warning */}
+      {stock.next_earnings_date && (() => {
+        const daysUntil = Math.ceil((new Date(stock.next_earnings_date).getTime() - Date.now()) / 86400000);
+        if (daysUntil >= 0 && daysUntil <= 14) {
+          return (
+            <div className="mb-5 flex items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/5 px-4 py-2.5 text-sm">
+              <span>⚠️</span>
+              <span className="text-yellow-300 font-medium">Earnings in {daysUntil} day{daysUntil !== 1 ? "s" : ""}</span>
+              <span className="text-yellow-500/70">({stock.next_earnings_date}) — elevated volatility risk</span>
+            </div>
+          );
+        }
+        return null;
+      })()}
+
       {/* Oversold Score */}
       <div className="mb-6">
         <div className="flex justify-between text-sm mb-1">
@@ -132,11 +200,11 @@ export default function StockCard({ stock }: Props) {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-500">P/E Ratio</span>
-              <span className="text-white font-medium">{fmt(stock.fundamentals.pe_ratio)}</span>
+              <span className={`font-medium ${stock.fundamentals.pe_ratio && stock.fundamentals.pe_ratio < 15 ? "text-emerald-400" : "text-white"}`}>{fmt(stock.fundamentals.pe_ratio)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Forward P/E</span>
-              <span className="text-white font-medium">{fmt(stock.fundamentals.forward_pe)}</span>
+              <span className={`font-medium ${stock.fundamentals.forward_pe && stock.fundamentals.forward_pe < 15 ? "text-emerald-400" : "text-white"}`}>{fmt(stock.fundamentals.forward_pe)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">P/B Ratio</span>
@@ -144,12 +212,24 @@ export default function StockCard({ stock }: Props) {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Debt/Equity</span>
-              <span className="text-white font-medium">{fmt(stock.fundamentals.debt_to_equity)}</span>
+              <span className={`font-medium ${stock.fundamentals.debt_to_equity && stock.fundamentals.debt_to_equity > 200 ? "text-red-400" : "text-white"}`}>{fmt(stock.fundamentals.debt_to_equity)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Revenue Growth</span>
               <span className={`font-medium ${(stock.fundamentals.revenue_growth ?? 0) > 0 ? "text-emerald-400" : "text-red-400"}`}>
                 {stock.fundamentals.revenue_growth !== null ? `${(stock.fundamentals.revenue_growth * 100).toFixed(1)}%` : "N/A"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Earnings Growth</span>
+              <span className={`font-medium ${(stock.fundamentals.earnings_growth ?? 0) > 0 ? "text-emerald-400" : "text-red-400"}`}>
+                {stock.fundamentals.earnings_growth != null ? `${(stock.fundamentals.earnings_growth * 100).toFixed(1)}%` : "N/A"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Profit Margin</span>
+              <span className={`font-medium ${(stock.fundamentals.profit_margin ?? 0) > 0.1 ? "text-emerald-400" : "text-white"}`}>
+                {stock.fundamentals.profit_margin != null ? `${(stock.fundamentals.profit_margin * 100).toFixed(1)}%` : "N/A"}
               </span>
             </div>
             <div className="flex justify-between">

@@ -46,6 +46,24 @@ class Notification(Base):
     triggered_at = Column(DateTime, default=datetime.utcnow)
 
 
+class PortfolioPosition(Base):
+    __tablename__ = "portfolio"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    account_number = Column(String, nullable=False)
+    account_name = Column(String, nullable=False)
+    ticker = Column(String, nullable=False, index=True)
+    company_name = Column(String, nullable=True)
+    shares = Column(Float, nullable=False)
+    avg_cost = Column(Float, nullable=True)
+    cost_basis_total = Column(Float, nullable=True)
+    last_price = Column(Float, nullable=True)
+    current_value = Column(Float, nullable=True)
+    total_gl_dollar = Column(Float, nullable=True)
+    total_gl_pct = Column(Float, nullable=True)
+    imported_at = Column(DateTime, default=datetime.utcnow)
+
+
 def init_db():
     Base.metadata.create_all(bind=engine)
 

@@ -25,6 +25,7 @@ export default function Navbar() {
     { href: "/", label: "Search" },
     { href: "/scanner", label: "Scanner" },
     { href: "/watchlist", label: "Watchlist" },
+    { href: "/portfolio", label: "Portfolio" },
     { href: "/alerts", label: "Alerts" },
   ];
 
