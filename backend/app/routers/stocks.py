@@ -23,6 +23,26 @@ PRESETS = {
 }
 
 
+@router.get("/search")
+def search_stocks(q: str):
+    """Search by company name or ticker, returns matching equities."""
+    import yfinance as yf
+    if not q or len(q) < 2:
+        return []
+    results = yf.Search(q, max_results=8)
+    matches = []
+    for quote in results.quotes:
+        if quote.get("quoteType") not in ("EQUITY", "ETF"):
+            continue
+        matches.append({
+            "ticker": quote.get("symbol", ""),
+            "name": quote.get("longname") or quote.get("shortname", ""),
+            "exchange": quote.get("exchange", ""),
+            "type": quote.get("quoteType", ""),
+        })
+    return matches
+
+
 @router.get("/batch/scan")
 def scan_stocks(tickers: str):
     """Scan comma-separated tickers, e.g. ?tickers=AAPL,MSFT,TSLA"""
