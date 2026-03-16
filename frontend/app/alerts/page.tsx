@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
+import StockModal from "@/components/StockModal";
 
 const ALERT_TYPES = [
   { value: "rsi_below", label: "RSI drops below", placeholder: "e.g. 30", hint: "Triggers when RSI ≤ threshold" },
@@ -84,6 +85,7 @@ export default function AlertsPage() {
     fetchAll();
   };
 
+  const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const unreadCount = notifications.filter((n) => !n.is_read).length;
   const selectedType = ALERT_TYPES.find((t) => t.value === alertType);
 
@@ -178,7 +180,7 @@ export default function AlertsPage() {
                   <div className="flex items-center gap-4">
                     <div className={`w-2 h-2 rounded-full ${alert.is_active ? "bg-emerald-500" : "bg-gray-600"}`} />
                     <div>
-                      <span className="font-bold text-white">{alert.ticker}</span>
+                      <span onClick={() => setSelectedTicker(alert.ticker)} className="font-bold text-white hover:text-emerald-400 cursor-pointer transition-colors">{alert.ticker}</span>
                       <span className="text-gray-400 text-sm ml-2">
                         {TYPE_LABELS[alert.alert_type]} {alert.threshold}
                       </span>
@@ -238,7 +240,10 @@ export default function AlertsPage() {
                 >
                   <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${n.is_read ? "bg-gray-700" : "bg-emerald-500"}`} />
                   <div className="flex-1">
-                    <p className="text-white text-sm">{n.message}</p>
+                    <p className="text-white text-sm">
+                      <span onClick={() => setSelectedTicker(n.ticker)} className="font-bold hover:text-emerald-400 cursor-pointer transition-colors">{n.ticker}</span>
+                      {n.message.replace(n.ticker, "")}
+                    </p>
                     <p className="text-gray-600 text-xs mt-1">{n.triggered_at?.slice(0, 16).replace("T", " ")}</p>
                   </div>
                 </div>
@@ -247,6 +252,7 @@ export default function AlertsPage() {
           )}
         </div>
       </div>
+      <StockModal ticker={selectedTicker} onClose={() => setSelectedTicker(null)} />
     </main>
   );
 }
