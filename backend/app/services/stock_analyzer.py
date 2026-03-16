@@ -3,6 +3,46 @@ import pandas as pd
 import ta
 
 
+def get_price_history(ticker: str, period: str = "6mo") -> list:
+    valid_periods = {"1mo", "3mo", "6mo", "1y", "2y"}
+    if period not in valid_periods:
+        period = "6mo"
+
+    stock = yf.Ticker(ticker)
+    hist = stock.history(period=period)
+    if hist.empty:
+        return []
+
+    close = hist["Close"]
+
+    # RSI
+    rsi_series = ta.momentum.RSIIndicator(close, window=14).rsi()
+
+    # Bollinger Bands
+    bb = ta.volatility.BollingerBands(close, window=20)
+    bb_upper = bb.bollinger_hband()
+    bb_lower = bb.bollinger_lband()
+    bb_mid = bb.bollinger_mavg()
+
+    result = []
+    for date, row in hist.iterrows():
+        date_str = date.strftime("%Y-%m-%d")
+        result.append({
+            "date": date_str,
+            "open": round(float(row["Open"]), 2),
+            "high": round(float(row["High"]), 2),
+            "low": round(float(row["Low"]), 2),
+            "close": round(float(row["Close"]), 2),
+            "volume": int(row["Volume"]),
+            "rsi": round(float(rsi_series[date]), 2) if not pd.isna(rsi_series[date]) else None,
+            "bb_upper": round(float(bb_upper[date]), 2) if not pd.isna(bb_upper[date]) else None,
+            "bb_lower": round(float(bb_lower[date]), 2) if not pd.isna(bb_lower[date]) else None,
+            "bb_mid": round(float(bb_mid[date]), 2) if not pd.isna(bb_mid[date]) else None,
+        })
+
+    return result
+
+
 def get_stock_analysis(ticker: str) -> dict:
     stock = yf.Ticker(ticker)
 

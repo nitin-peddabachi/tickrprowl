@@ -1,6 +1,6 @@
 import asyncio
 from fastapi import APIRouter, HTTPException
-from app.services.stock_analyzer import get_stock_analysis
+from app.services.stock_analyzer import get_stock_analysis, get_price_history
 
 router = APIRouter()
 
@@ -54,6 +54,14 @@ def scan_preset(preset_name: str):
 @router.get("/presets")
 def list_presets():
     return {name: tickers for name, tickers in PRESETS.items()}
+
+
+@router.get("/{ticker}/history")
+def price_history(ticker: str, period: str = "6mo"):
+    data = get_price_history(ticker.upper(), period)
+    if not data:
+        raise HTTPException(status_code=404, detail=f"No history found for {ticker}")
+    return data
 
 
 @router.get("/{ticker}")
