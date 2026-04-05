@@ -7,11 +7,13 @@ interface Props {
   stocks: any[];
 }
 
-const signalColors: Record<string, string> = {
-  "Strong Buy": "text-emerald-400 bg-emerald-400/10",
-  "Buy": "text-green-400 bg-green-400/10",
-  "Watch": "text-yellow-400 bg-yellow-400/10",
-  "Neutral": "text-gray-400 bg-gray-400/10",
+const signalConfig: Record<string, { classes: string; icon: string }> = {
+  "Strong Buy":  { classes: "text-emerald-400 bg-emerald-400/10", icon: "▲▲" },
+  "Buy":         { classes: "text-green-400 bg-green-400/10",     icon: "▲"  },
+  "Watch":       { classes: "text-yellow-400 bg-yellow-400/10",   icon: "◎"  },
+  "Neutral":     { classes: "text-gray-400 bg-gray-400/10",       icon: "─"  },
+  "Sell":        { classes: "text-orange-400 bg-orange-400/10",   icon: "▼"  },
+  "Strong Sell": { classes: "text-red-400 bg-red-400/10",         icon: "▼▼" },
 };
 
 const STEAL_CONDITION_LABELS: Record<string, string> = {
@@ -182,9 +184,15 @@ export default function ScannerTable({ stocks }: Props) {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex flex-col gap-1">
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${signalColors[stock.signal]}`}>
-                      {stock.signal}
-                    </span>
+                    {(() => {
+                      const s = signalConfig[stock.signal] || signalConfig["Neutral"];
+                      return (
+                        <span className={`text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1 w-fit ${s.classes}`}>
+                          <span className="opacity-60 text-[10px]">{s.icon}</span>
+                          {stock.signal}
+                        </span>
+                      );
+                    })()}
                     {stock.is_absolute_steal && (
                       <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-400/15 text-amber-300 whitespace-nowrap">
                         🔥 Steal
@@ -203,25 +211,32 @@ export default function ScannerTable({ stocks }: Props) {
                     <span className="text-white font-medium">{stock.oversold_score}</span>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-white">${fmt(stock.current_price)}</td>
-                <td className={`px-4 py-3 font-medium ${
+                <td className="px-4 py-3">
+                  <span className="text-white font-mono">${fmt(stock.current_price)}</span>
+                  {stock.price_change_pct != null && (
+                    <span className={`block text-xs font-mono ${stock.price_change_pct >= 0 ? "text-emerald-500" : "text-red-500"}`}>
+                      {stock.price_change_pct >= 0 ? "+" : ""}{fmt(stock.price_change_pct)}%
+                    </span>
+                  )}
+                </td>
+                <td className={`px-4 py-3 font-mono font-medium ${
                   stock.technicals.rsi < 30 ? "text-emerald-400" :
                   stock.technicals.rsi > 70 ? "text-red-400" : "text-white"
                 }`}>
                   {fmt(stock.technicals.rsi)}
                 </td>
-                <td className={`px-4 py-3 font-medium ${stock.pct_from_52w_high < -20 ? "text-emerald-400" : "text-white"}`}>
+                <td className={`px-4 py-3 font-mono font-medium ${stock.pct_from_52w_high < -20 ? "text-emerald-400" : "text-white"}`}>
                   {fmt(stock.pct_from_52w_high)}%
                 </td>
-                <td className="px-4 py-3 text-white">{fmt(stock.fundamentals.pe_ratio)}</td>
-                <td className={`px-4 py-3 font-medium ${
+                <td className="px-4 py-3 text-white font-mono">{fmt(stock.fundamentals.pe_ratio)}</td>
+                <td className={`px-4 py-3 font-mono font-medium ${
                   (stock.fundamentals.revenue_growth ?? 0) > 0 ? "text-emerald-400" : "text-red-400"
                 }`}>
                   {stock.fundamentals.revenue_growth !== null && stock.fundamentals.revenue_growth !== undefined
                     ? `${(stock.fundamentals.revenue_growth * 100).toFixed(1)}%`
                     : "—"}
                 </td>
-                <td className="px-4 py-3 text-gray-400">{fmtMarketCap(stock.market_cap)}</td>
+                <td className="px-4 py-3 text-gray-500 font-mono">{fmtMarketCap(stock.market_cap)}</td>
               </tr>
             ))}
           </tbody>

@@ -17,7 +17,6 @@ export default function ScannerPage() {
   const [customTickers, setCustomTickers] = useState("");
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
-
   const runPreset = async (presetKey: string) => {
     setLoading(true);
     setActivePreset(presetKey);
@@ -119,7 +118,7 @@ export default function ScannerPage() {
         {results.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <p className="text-gray-400 text-sm">{results.length} stocks analyzed · sorted by oversold score</p>
+                  <p className="text-gray-400 text-sm">{results.length} stocks analyzed · sorted by oversold score</p>
               <p className="text-gray-500 text-xs">
                 {results.filter(s => s.signal === "Strong Buy").length} Strong Buy ·{" "}
                 {results.filter(s => s.signal === "Buy").length} Buy ·{" "}
@@ -135,6 +134,7 @@ export default function ScannerPage() {
             <p className="text-lg">Select a preset or enter tickers to start scanning</p>
           </div>
         )}
+
       </div>
     </main>
   );
