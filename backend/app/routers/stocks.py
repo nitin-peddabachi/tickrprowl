@@ -1,4 +1,4 @@
-import asyncio
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from fastapi import APIRouter, HTTPException
 from app.services.stock_analyzer import get_stock_analysis, get_price_history
 
@@ -43,17 +43,24 @@ def search_stocks(q: str):
     return matches
 
 
+def _fetch_many(ticker_list: list) -> list:
+    """Fetch analysis for a list of tickers in parallel (up to 8 workers)."""
+    results = []
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        futures = {executor.submit(get_stock_analysis, ticker): ticker for ticker in ticker_list}
+        for future in as_completed(futures):
+            data = future.result()
+            if "error" not in data:
+                results.append(data)
+    results.sort(key=lambda x: x["oversold_score"], reverse=True)
+    return results
+
+
 @router.get("/batch/scan")
 def scan_stocks(tickers: str):
     """Scan comma-separated tickers, e.g. ?tickers=AAPL,MSFT,TSLA"""
     ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
-    results = []
-    for ticker in ticker_list:
-        data = get_stock_analysis(ticker)
-        if "error" not in data:
-            results.append(data)
-    results.sort(key=lambda x: x["oversold_score"], reverse=True)
-    return results
+    return _fetch_many(ticker_list)
 
 
 @router.get("/batch/preset/{preset_name}")
@@ -62,13 +69,8 @@ def scan_preset(preset_name: str):
     ticker_list = PRESETS.get(preset_name)
     if not ticker_list:
         raise HTTPException(status_code=404, detail=f"Preset '{preset_name}' not found. Available: {list(PRESETS.keys())}")
-    results = []
-    for ticker in ticker_list:
-        data = get_stock_analysis(ticker)
-        if "error" not in data:
-            results.append(data)
-    results.sort(key=lambda x: x["oversold_score"], reverse=True)
-    return results
+    return _fetch_many(ticker_list)
+
 
 
 @router.get("/presets")

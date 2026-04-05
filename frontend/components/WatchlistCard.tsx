@@ -35,7 +35,10 @@ export default function WatchlistCard({ item, onRemove }: Props) {
   const signalClass = signalColors[signal] || "text-gray-400 bg-gray-400/10 border-gray-400/30";
   const currentPrice = analysis?.current_price;
   const targetNum = parseFloat(editTarget);
-  const upside = currentPrice && targetNum ? ((targetNum - currentPrice) / currentPrice * 100).toFixed(1) : null;
+  // Fall back to analyst consensus target when no user target is set
+  const displayTarget = targetNum > 0 ? targetNum : analysis?.analyst?.target_mean ?? null;
+  const targetLabel = targetNum > 0 ? "Target" : "Analyst Target";
+  const upside = currentPrice && displayTarget ? ((displayTarget - currentPrice) / currentPrice * 100).toFixed(1) : null;
 
   const saveNotes = async () => {
     setSaving(true);
@@ -89,9 +92,9 @@ export default function WatchlistCard({ item, onRemove }: Props) {
           )}
 
           {/* Target price */}
-          {targetNum > 0 && currentPrice && (
+          {displayTarget && currentPrice && (
             <div className="text-right">
-              <p className="text-sm text-gray-400">Target: <span className="text-white font-medium">${targetNum}</span></p>
+              <p className="text-sm text-gray-400">{targetLabel}: <span className="text-white font-medium">${typeof displayTarget === "number" ? displayTarget.toFixed(2) : displayTarget}</span></p>
               <p className={`text-xs font-medium ${parseFloat(upside!) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                 {upside}% upside
               </p>

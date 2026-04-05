@@ -1,9 +1,10 @@
-from sqlalchemy import create_engine, Column, String, Float, DateTime, Boolean, Integer
+import os
+from sqlalchemy import create_engine, Column, String, Float, DateTime, Boolean, Integer, Text, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 
-DATABASE_URL = "sqlite:///./stockr.db"
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./stockr.db")
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -61,11 +62,27 @@ class PortfolioPosition(Base):
     current_value = Column(Float, nullable=True)
     total_gl_dollar = Column(Float, nullable=True)
     total_gl_pct = Column(Float, nullable=True)
+    broker = Column(String, nullable=True, default="fidelity")
     imported_at = Column(DateTime, default=datetime.utcnow)
+
+
+class StockCache(Base):
+    __tablename__ = "stock_cache"
+
+    ticker = Column(String, primary_key=True, index=True)
+    data = Column(Text, nullable=False)       # JSON blob
+    cached_at = Column(DateTime, nullable=False)
 
 
 def init_db():
     Base.metadata.create_all(bind=engine)
+    # Migrate: add broker column to existing installs
+    with engine.connect() as conn:
+        try:
+            conn.execute(text("ALTER TABLE portfolio ADD COLUMN broker VARCHAR DEFAULT 'fidelity'"))
+            conn.commit()
+        except Exception:
+            pass  # Column already exists
 
 
 def get_db():
