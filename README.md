@@ -1,4 +1,4 @@
-# Stockr
+# TickrProwl
 
 A personal stock analysis app to identify oversold stocks using technical indicators (RSI, Bollinger Bands, Stochastic), fundamentals (DCF, Piotroski F-Score, FCF Yield), and analyst consensus. Supports portfolio tracking via Fidelity and E*Trade CSV imports.
 
@@ -9,8 +9,8 @@ A personal stock analysis app to identify oversold stocks using technical indica
 ## Setup
 
 ```bash
-git clone https://github.com/nitin-peddabachi/stockr
-cd stockr
+git clone https://github.com/nitin-peddabachi/tickrprowl
+cd tickrprowl
 docker compose up --build
 ```
 

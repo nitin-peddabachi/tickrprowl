@@ -8,7 +8,7 @@ from app.routers import portfolio
 from app.models.database import init_db
 from app.services.alert_checker import check_alerts
 
-app = FastAPI(title="Stockr API", version="1.0.0")
+app = FastAPI(title="TickrProwl API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -39,4 +39,4 @@ def shutdown_scheduler():
 
 @app.get("/")
 def root():
-    return {"message": "Stockr API is running"}
+    return {"message": "TickrProwl API is running"}

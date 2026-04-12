@@ -1,4 +1,4 @@
-# Stockr
+# TickrProwl
 
 A personal stock analysis app to identify and invest in oversold stocks by analyzing financial statements and technical indicators across multiple quarters.
 
@@ -6,13 +6,13 @@ A personal stock analysis app to identify and invest in oversold stocks by analy
 
 - **Frontend**: Next.js 16 + TypeScript + Tailwind CSS + Recharts — runs on `http://localhost:3000`
 - **Backend**: FastAPI (Python 3.9) + yfinance + pandas + ta — runs on `http://localhost:8000`
-- **Database**: SQLite (file: `backend/stockr.db`) via SQLAlchemy
+- **Database**: SQLite (file: `backend/tickrprowl.db`) via SQLAlchemy
 - **Data source**: Yahoo Finance via yfinance 1.2.0+
 
 ## Project Structure
 
 ```
-stockr/
+tickrprowl/
 ├── backend/
 │   ├── app/
 │   │   ├── main.py               # FastAPI app, CORS, scheduler registration
@@ -105,6 +105,6 @@ Signals: 70+ = Strong Buy, 50+ = Buy, 30+ = Watch, else Neutral
 
 ## GitHub
 
-- Repo: `github.com/nitin-peddabachi/stockr` (private)
+- Repo: `github.com/nitin-peddabachi/tickrprowl` (private)
 - Branch: `main`
 - Auto-deploys: not configured (runs locally only)

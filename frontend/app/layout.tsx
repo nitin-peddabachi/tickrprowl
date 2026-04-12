@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Stockr — Oversold Stock Scanner",
+  title: "TickrProwl — Oversold Stock Scanner",
   description: "Identify oversold stocks with strong fundamentals",
 };
 

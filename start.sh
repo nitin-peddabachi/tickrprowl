@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Stockr startup script
-echo "Starting Stockr..."
+# TickrProwl startup script
+echo "Starting TickrProwl..."
 
 # Load Homebrew
 eval "$(/opt/homebrew/bin/brew shellenv)"
@@ -19,9 +19,9 @@ sleep 1
 # Start backend
 echo "Starting backend..."
 cd "$SCRIPT_DIR/backend"
-python3 -m uvicorn app.main:app --reload > /tmp/stockr-backend.log 2>&1 &
+python3 -m uvicorn app.main:app --reload > /tmp/tickrprowl-backend.log 2>&1 &
 BACKEND_PID=$!
-echo $BACKEND_PID > /tmp/stockr-backend.pid
+echo $BACKEND_PID > /tmp/tickrprowl-backend.pid
 
 # Wait for backend to be ready (up to 20s)
 BACKEND_READY=0
@@ -35,16 +35,16 @@ for i in {1..20}; do
 done
 if [ $BACKEND_READY -eq 0 ]; then
   echo "Backend failed to start. Last log:"
-  tail -20 /tmp/stockr-backend.log
+  tail -20 /tmp/tickrprowl-backend.log
   exit 1
 fi
 
 # Start frontend
 echo "Starting frontend..."
 cd "$SCRIPT_DIR/frontend"
-npm run dev > /tmp/stockr-frontend.log 2>&1 &
+npm run dev > /tmp/tickrprowl-frontend.log 2>&1 &
 FRONTEND_PID=$!
-echo $FRONTEND_PID > /tmp/stockr-frontend.pid
+echo $FRONTEND_PID > /tmp/tickrprowl-frontend.pid
 
 # Wait for frontend to be ready (up to 30s)
 for i in {1..30}; do
@@ -56,7 +56,7 @@ for i in {1..30}; do
 done
 
 echo ""
-echo "Stockr is running!"
+echo "TickrProwl is running!"
 echo "  App:     http://localhost:3000"
 echo "  API:     http://localhost:8000"
 echo "  API docs: http://localhost:8000/docs"
