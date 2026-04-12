@@ -1,6 +1,6 @@
 # Stockr
 
-A personal stock analysis app to identify oversold stocks using technical indicators (RSI, Bollinger Bands) and fundamentals. Supports portfolio tracking via Fidelity and E*Trade CSV imports.
+A personal stock analysis app to identify oversold stocks using technical indicators (RSI, Bollinger Bands, Stochastic), fundamentals (DCF, Piotroski F-Score, FCF Yield), and analyst consensus. Supports portfolio tracking via Fidelity and E*Trade CSV imports.
 
 ## Requirements
 
@@ -32,9 +32,31 @@ docker compose down
 
 - **Search** — look up any stock by ticker or company name for a full analysis
 - **Scanner** — scan a batch of tickers or preset lists (S&P 500 sample, Tech, Value) for oversold signals
-- **Watchlist** — track stocks with notes and target prices
+- **Watchlist** — track stocks with notes and target prices; refresh live data on demand
 - **Portfolio** — import your positions and overlay live analysis
-- **Alerts** — set RSI, price, or score alerts that check every 30 minutes
+- **Alerts** — set RSI, price, or score alert rules that check every 30 minutes with Telegram push notifications
+
+## Telegram Alerts
+
+When an alert rule triggers, you get a push notification on your phone via a Telegram bot. To set it up:
+
+1. Create a bot via [@BotFather](https://t.me/BotFather) — send `/newbot`, copy the token it gives you
+2. Start a conversation with your bot, then visit `https://api.telegram.org/botYOUR_TOKEN/getUpdates` to get your chat ID
+3. Create `backend/.env` with your credentials:
+
+```
+TELEGRAM_BOT_TOKEN=your_token_here
+TELEGRAM_CHAT_ID=your_chat_id_here
+```
+
+4. Restart the app — alerts will now send Telegram messages when they trigger
+
+Notifications look like:
+
+> 🔔 Stockr Alert
+> AAPL RSI is 28.4 — below your alert threshold of 30.0
+
+A 4-hour cooldown prevents the same alert from firing repeatedly.
 
 ## Importing your portfolio
 
@@ -57,11 +79,13 @@ Re-importing replaces only that broker's data — your other accounts are untouc
 | 30+ | Watch |
 | <30 | Neutral |
 
-Factors: RSI, Bollinger Band position, % from 52-week high, revenue growth, P/E ratio.
+Factors: RSI, Stochastic %K, Bollinger Band position, % from 52-week high, SMA 50/200, MACD, revenue growth, P/E, EV/EBITDA, FCF yield, DCF valuation, Piotroski F-Score, analyst consensus.
 
 ## Data
 
 Your data is stored in a Docker volume on your machine. It persists across restarts and is not shared anywhere.
+
+Stock analysis is cached for 60 minutes to reduce API calls and speed up repeated lookups.
 
 To reset everything:
 
