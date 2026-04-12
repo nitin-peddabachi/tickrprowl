@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import httpx
 from dotenv import load_dotenv
 
-from app.models.database import SessionLocal, Alert, Notification
+from app.models.database import SessionLocal, Alert, Notification, ScoreHistory, WatchlistItem
 from app.services.stock_analyzer import get_stock_analysis
 
 load_dotenv()
@@ -30,6 +30,41 @@ ALERT_TYPE_LABELS = {
     "price_below": "Price Below",
     "score_above": "Oversold Score Above",
 }
+
+
+def record_watchlist_scores():
+    """Daily job: record oversold score snapshots for every watchlisted stock."""
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Recording watchlist score snapshots...")
+    db = SessionLocal()
+    try:
+        tickers = [row.ticker for row in db.query(WatchlistItem.ticker).all()]
+        if not tickers:
+            print("  No watchlist items — skipping.")
+            return
+
+        for ticker in tickers:
+            try:
+                result = get_stock_analysis(ticker)
+                if "error" in result:
+                    continue
+                row = ScoreHistory(
+                    ticker=ticker,
+                    score=result["oversold_score"],
+                    signal=result["signal"],
+                    rsi=round(result["technicals"]["rsi"], 2),
+                    price=result["current_price"],
+                )
+                db.add(row)
+                print(f"  {ticker}: score={result['oversold_score']} ({result['signal']})")
+            except Exception as e:
+                print(f"  Failed to record score for {ticker}: {e}")
+
+        db.commit()
+    except Exception as e:
+        print(f"Score snapshot error: {e}")
+        db.rollback()
+    finally:
+        db.close()
 
 
 def check_alerts():

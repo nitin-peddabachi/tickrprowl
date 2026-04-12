@@ -74,6 +74,18 @@ class StockCache(Base):
     cached_at = Column(DateTime, nullable=False)
 
 
+class ScoreHistory(Base):
+    __tablename__ = "score_history"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    ticker = Column(String, nullable=False, index=True)
+    score = Column(Integer, nullable=False)
+    signal = Column(String, nullable=True)
+    rsi = Column(Float, nullable=True)
+    price = Column(Float, nullable=True)
+    recorded_at = Column(DateTime, default=datetime.utcnow)
+
+
 def init_db():
     Base.metadata.create_all(bind=engine)
     # Migrate: add broker column to existing installs

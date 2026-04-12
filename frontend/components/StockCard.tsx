@@ -4,6 +4,7 @@ import { useState } from "react";
 import axios from "axios";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import PriceChart from "@/components/PriceChart";
+import ScoreHistoryChart from "@/components/ScoreHistoryChart";
 
 interface Props {
   stock: any;
@@ -72,7 +73,7 @@ function AnalystLabel({ rating }: { rating: number }) {
   return <span className="text-red-400 font-semibold">Sell</span>;
 }
 
-type Tab = "technicals" | "fundamentals" | "analysis";
+type Tab = "technicals" | "fundamentals" | "analysis" | "insider";
 
 export default function StockCard({ stock }: Props) {
   const [watchlistStatus, setWatchlistStatus] = useState<"idle" | "adding" | "added" | "error">("idle");
@@ -101,6 +102,7 @@ export default function StockCard({ stock }: Props) {
     { key: "technicals",   label: "Technicals" },
     { key: "fundamentals", label: "Fundamentals" },
     { key: "analysis",     label: "Analysis" },
+    { key: "insider",      label: "Insider" },
   ];
 
   return (
@@ -462,6 +464,97 @@ export default function StockCard({ stock }: Props) {
           </div>
         )}
 
+        {/* Tab: Insider Trading */}
+        {activeTab === "insider" && (() => {
+          const insider = stock.insider_activity || {};
+          const transactions: any[] = insider.transactions || [];
+          const signal: string = insider.signal || "neutral";
+          const buyCount: number = insider.buy_count || 0;
+          const sellCount: number = insider.sell_count || 0;
+          const netShares: number = insider.net_shares || 0;
+
+          const signalBadge =
+            signal === "bullish"
+              ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/30"
+              : signal === "bearish"
+              ? "bg-red-400/10 text-red-400 border-red-400/30"
+              : "bg-gray-700/50 text-gray-400 border-gray-700";
+
+          const fmtShares = (n: number) =>
+            Math.abs(n) >= 1_000_000
+              ? `${(n / 1_000_000).toFixed(1)}M`
+              : Math.abs(n) >= 1_000
+              ? `${(n / 1_000).toFixed(1)}K`
+              : String(n);
+
+          const fmtValue = (v: number) =>
+            v >= 1_000_000_000
+              ? `$${(v / 1_000_000_000).toFixed(1)}B`
+              : v >= 1_000_000
+              ? `$${(v / 1_000_000).toFixed(1)}M`
+              : v >= 1_000
+              ? `$${(v / 1_000).toFixed(0)}K`
+              : `$${v}`;
+
+          return (
+            <div className="animate-fade-in space-y-4">
+              {/* Summary row */}
+              <div className="flex items-center justify-between rounded-xl border border-gray-800 bg-gray-800/30 px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Insider Signal</span>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border capitalize ${signalBadge}`}>
+                    {signal}
+                  </span>
+                </div>
+                <div className="flex gap-4 text-xs font-mono">
+                  <span className="text-emerald-400">{buyCount} buy{buyCount !== 1 ? "s" : ""}</span>
+                  <span className="text-red-400">{sellCount} sale{sellCount !== 1 ? "s" : ""}</span>
+                  {netShares !== 0 && (
+                    <span className={netShares > 0 ? "text-emerald-400" : "text-red-400"}>
+                      net {netShares > 0 ? "+" : ""}{fmtShares(netShares)} shares
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Transaction list */}
+              {transactions.length === 0 ? (
+                <p className="text-center text-gray-600 text-xs py-6">No insider transactions in the last 6 months</p>
+              ) : (
+                <div className="space-y-1">
+                  {transactions.map((t, i) => (
+                    <div key={i} className="flex items-center justify-between py-2 border-b border-gray-800/50 last:border-0 gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          t.type === "buy" ? "bg-emerald-400/10 text-emerald-400" : "bg-red-400/10 text-red-400"
+                        }`}>
+                          {t.type === "buy" ? "BUY" : t.type === "sell" ? "SELL" : "—"}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-xs text-white truncate">{t.insider || "Unknown"}</p>
+                          {t.position && <p className="text-[10px] text-gray-500 truncate">{t.position}</p>}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        {t.shares != null && (
+                          <p className="text-xs font-mono text-gray-300">{fmtShares(t.shares)} shares</p>
+                        )}
+                        <div className="flex items-center gap-2 justify-end">
+                          {t.value != null && (
+                            <p className="text-[10px] font-mono text-gray-500">{fmtValue(t.value)}</p>
+                          )}
+                          {t.date && <p className="text-[10px] text-gray-600">{t.date}</p>}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-[10px] text-gray-700 text-center">Source: SEC filings via Yahoo Finance · Last 6 months</p>
+            </div>
+          );
+        })()}
+
         {/* Tab: Analysis */}
         {activeTab === "analysis" && (
           <div className="animate-fade-in space-y-6">
@@ -495,6 +588,9 @@ export default function StockCard({ stock }: Props) {
                 </div>
               </div>
             )}
+
+            {/* Score history — only shown once enough data points exist */}
+            <ScoreHistoryChart ticker={stock.ticker} minPoints={7} />
 
             {/* Revenue chart */}
             {revenueData.length > 0 && (
