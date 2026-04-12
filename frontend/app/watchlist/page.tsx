@@ -37,12 +37,15 @@ export default function WatchlistPage() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const fetchWatchlist = async () => {
     setLoading(true);
+    setError("");
     try {
       const res = await axios.get("http://localhost:8000/api/watchlist/");
       setItems(res.data);
+      setLastUpdated(new Date());
     } catch {
       setError("Failed to load watchlist. Is the backend running?");
     } finally {
@@ -71,14 +74,30 @@ export default function WatchlistPage() {
             <h1 className="text-4xl font-bold text-emerald-400 mb-1">Watchlist</h1>
             <p className="text-gray-400">Your saved stocks with live analysis</p>
           </div>
-          {items.length > 0 && (
-            <button
-              onClick={() => exportWatchlistCsv(items)}
-              className="text-sm px-4 py-2 rounded-lg border border-gray-700 text-gray-400 hover:border-emerald-500 hover:text-emerald-400 transition-colors mt-2"
-            >
-              ↓ Export CSV
-            </button>
-          )}
+          <div className="flex flex-col items-end gap-2 mt-2">
+            <div className="flex gap-2">
+              <button
+                onClick={fetchWatchlist}
+                disabled={loading}
+                className="text-sm px-4 py-2 rounded-lg border border-gray-700 text-gray-400 hover:border-emerald-500 hover:text-emerald-400 transition-colors disabled:opacity-40"
+              >
+                {loading ? "Refreshing…" : "↺ Refresh"}
+              </button>
+              {items.length > 0 && (
+                <button
+                  onClick={() => exportWatchlistCsv(items)}
+                  className="text-sm px-4 py-2 rounded-lg border border-gray-700 text-gray-400 hover:border-emerald-500 hover:text-emerald-400 transition-colors"
+                >
+                  ↓ Export CSV
+                </button>
+              )}
+            </div>
+            {lastUpdated && (
+              <p className="text-xs text-gray-600">
+                Updated {lastUpdated.toLocaleTimeString()}
+              </p>
+            )}
+          </div>
         </div>
 
         {!loading && items.length > 0 && (

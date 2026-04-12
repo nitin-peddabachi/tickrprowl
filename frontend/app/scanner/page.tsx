@@ -17,6 +17,7 @@ export default function ScannerPage() {
   const [customTickers, setCustomTickers] = useState("");
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
+  const [hasScanned, setHasScanned] = useState(false);
   const runPreset = async (presetKey: string) => {
     setLoading(true);
     setActivePreset(presetKey);
@@ -26,6 +27,7 @@ export default function ScannerPage() {
     try {
       const res = await axios.get(`http://localhost:8000/api/stocks/batch/preset/${presetKey}`);
       setResults(res.data);
+      setHasScanned(true);
       setProgress("");
     } catch (e: any) {
       setError("Failed to run scan. Is the backend running?");
@@ -45,6 +47,7 @@ export default function ScannerPage() {
     try {
       const res = await axios.get(`http://localhost:8000/api/stocks/batch/scan?tickers=${encodeURIComponent(customTickers)}`);
       setResults(res.data);
+      setHasScanned(true);
       setProgress("");
     } catch (e: any) {
       setError("Failed to run scan. Is the backend running?");
@@ -131,7 +134,14 @@ export default function ScannerPage() {
 
         {!loading && results.length === 0 && !error && (
           <div className="mt-20 text-center text-gray-600">
-            <p className="text-lg">Select a preset or enter tickers to start scanning</p>
+            {hasScanned ? (
+              <>
+                <p className="text-lg">No results</p>
+                <p className="text-sm mt-1">All scanned stocks had insufficient data or no signals</p>
+              </>
+            ) : (
+              <p className="text-lg">Select a preset or enter tickers to start scanning</p>
+            )}
           </div>
         )}
 
