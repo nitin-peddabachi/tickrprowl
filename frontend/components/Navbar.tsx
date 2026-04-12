@@ -42,6 +42,7 @@ export default function Navbar() {
           <span className="text-white font-bold text-lg tracking-tight">
             Stock<span className="text-emerald-400">r</span>
           </span>
+          <span className="text-gray-600 text-xs font-mono">v1.1.0</span>
         </Link>
 
         {/* Links */}
