@@ -66,7 +66,7 @@ Go to the **Portfolio** tab and click **Import CSV**.
 |---|---|
 | Fidelity | Accounts → Portfolio → Positions → Download CSV |
 | E*Trade (positions) | My Portfolio → Holdings → Download → Positions CSV |
-| E*Trade (ESPP) | Stock Plan → Holdings → By Benefit Type → Export |
+| E*Trade (ESPP) | Export holdings from your Stock Plan account |
 
 Re-importing replaces only that broker's data — your other accounts are untouched.
 
