@@ -324,6 +324,11 @@ def get_stock_analysis(ticker: str) -> dict:
     debt_to_equity = info.get("debtToEquity")
     revenue_growth = info.get("revenueGrowth")
     earnings_growth = info.get("earningsGrowth")
+    # PEG ratio: P/E ÷ earnings growth rate (as %). <1 = undervalued, >2 = expensive.
+    # Prefer forward P/E with forward growth; fall back to trailing.
+    peg_ratio = info.get("pegRatio")
+    if peg_ratio is None and pe_ratio and earnings_growth and earnings_growth > 0:
+        peg_ratio = round(pe_ratio / (earnings_growth * 100), 2)
     profit_margin = info.get("profitMargins")
     market_cap = info.get("marketCap")
     ev_to_ebitda = info.get("enterpriseToEbitda")
@@ -414,6 +419,7 @@ def get_stock_analysis(ticker: str) -> dict:
         piotroski_score=piotroski["score"],
         fcf_yield=fcf_yield,
         ev_to_ebitda=ev_to_ebitda,
+        peg_ratio=peg_ratio,
         golden_cross=golden_cross,
         sma_50=sma_50,
         sma_200=sma_200,
@@ -480,6 +486,7 @@ def get_stock_analysis(ticker: str) -> dict:
             "dcf_value": dcf_value,
             "ev_to_ebitda": ev_to_ebitda,
             "fcf_yield": fcf_yield,
+            "peg_ratio": peg_ratio,
         },
         "analyst": {
             "rating": analyst_rating,
@@ -595,6 +602,16 @@ def _calculate_oversold_score(
         elif piotroski_score <= 2:
             score -= 15
 
+    # Debt penalty — high leverage makes oversold stocks dangerous
+    # D/E is reported as a percentage by yfinance (e.g. 150 = 1.5x)
+    if debt_to_equity is not None:
+        if debt_to_equity > 300:
+            score -= 20
+        elif debt_to_equity > 200:
+            score -= 10
+        elif debt_to_equity > 150:
+            score -= 5
+
     return min(max(score, 0), 100)
 
 
@@ -632,7 +649,7 @@ def _get_signal(
     oversold_score: int, rsi: float, bb_percent: float, stoch_k: float,
     pct_from_high: float, pe_ratio, forward_pe, revenue_growth,
     dcf_value, current_price, macd_line, signal_line,
-    piotroski_score, fcf_yield, ev_to_ebitda,
+    piotroski_score, fcf_yield, ev_to_ebitda, peg_ratio=None,
     golden_cross=None, sma_50=None, sma_200=None,
     analyst_rating=None, analyst_count=None, target_price_mean=None,
 ) -> dict:
@@ -698,6 +715,8 @@ def _get_signal(
             reasons.append(f"Low P/E of {pe_ratio:.1f} — cheap on earnings")
         elif forward_pe and forward_pe < 15:
             reasons.append(f"Forward P/E of {forward_pe:.1f} — attractive on future earnings")
+        if peg_ratio is not None and 0 < peg_ratio < 1:
+            reasons.append(f"PEG ratio of {peg_ratio:.2f} — growth available at a discount")
         if revenue_growth and revenue_growth > 0.05:
             reasons.append(f"Revenue growing at {revenue_growth * 100:.1f}% — fundamentals intact")
         if piotroski_score is not None and piotroski_score >= 7:
@@ -729,6 +748,8 @@ def _get_signal(
             reasons.append(f"Trading {upside:.0f}% below DCF fair value")
         if pe_ratio and pe_ratio < 15:
             reasons.append(f"P/E of {pe_ratio:.1f} — cheap valuation")
+        if peg_ratio is not None and 0 < peg_ratio < 1:
+            reasons.append(f"PEG ratio of {peg_ratio:.2f} — undervalued relative to growth")
         if revenue_growth and revenue_growth > 0:
             reasons.append(f"Revenue growing at {revenue_growth * 100:.1f}%")
         if ev_to_ebitda is not None and 0 < ev_to_ebitda < 12:
