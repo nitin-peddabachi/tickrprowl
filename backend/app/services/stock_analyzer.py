@@ -255,38 +255,49 @@ def get_stock_analysis(ticker: str) -> dict:
     if cached:
         return cached
 
-    stock = yf.Ticker(ticker)
+    try:
+        stock = yf.Ticker(ticker)
 
-    # Fetch 1 year to support SMA 200 (needs ~200 trading days)
-    hist = stock.history(period="1y")
+        # Fetch 1 year to support SMA 200 (needs ~200 trading days)
+        hist = stock.history(period="1y")
+    except Exception as e:
+        return {"error": f"Failed to fetch data for {ticker}: {e}"}
+
     if hist.empty:
         return {"error": f"No data found for ticker {ticker}"}
 
     close = hist["Close"]
 
     # Technical indicators
-    rsi = ta.momentum.RSIIndicator(close).rsi().iloc[-1]
-    macd = ta.trend.MACD(close)
-    macd_line = macd.macd().iloc[-1]
-    signal_line = macd.macd_signal().iloc[-1]
-    bb = ta.volatility.BollingerBands(close)
-    bb_percent = bb.bollinger_pband().iloc[-1]
+    try:
+        rsi = ta.momentum.RSIIndicator(close).rsi().iloc[-1]
+        macd = ta.trend.MACD(close)
+        macd_line = macd.macd().iloc[-1]
+        signal_line = macd.macd_signal().iloc[-1]
+        bb = ta.volatility.BollingerBands(close)
+        bb_percent = bb.bollinger_pband().iloc[-1]
 
-    stoch = ta.momentum.StochasticOscillator(hist["High"], hist["Low"], close, window=14, smooth_window=3)
-    stoch_k = stoch.stoch().iloc[-1]
-    stoch_d = stoch.stoch_signal().iloc[-1]
+        stoch = ta.momentum.StochasticOscillator(hist["High"], hist["Low"], close, window=14, smooth_window=3)
+        stoch_k = stoch.stoch().iloc[-1]
+        stoch_d = stoch.stoch_signal().iloc[-1]
 
-    # Moving averages
-    sma_50_series = ta.trend.SMAIndicator(close, window=50).sma_indicator()
-    sma_200_series = ta.trend.SMAIndicator(close, window=200).sma_indicator()
-    sma_50 = float(sma_50_series.iloc[-1]) if not pd.isna(sma_50_series.iloc[-1]) else None
-    sma_200 = float(sma_200_series.iloc[-1]) if not pd.isna(sma_200_series.iloc[-1]) else None
-    golden_cross = bool(sma_50 > sma_200) if (sma_50 is not None and sma_200 is not None) else None
+        # Moving averages
+        sma_50_series = ta.trend.SMAIndicator(close, window=50).sma_indicator()
+        sma_200_series = ta.trend.SMAIndicator(close, window=200).sma_indicator()
+        sma_50 = float(sma_50_series.iloc[-1]) if not pd.isna(sma_50_series.iloc[-1]) else None
+        sma_200 = float(sma_200_series.iloc[-1]) if not pd.isna(sma_200_series.iloc[-1]) else None
+        golden_cross = bool(sma_50 > sma_200) if (sma_50 is not None and sma_200 is not None) else None
+    except Exception as e:
+        return {"error": f"Failed to compute technical indicators for {ticker}: {e}"}
 
     current_price = round(close.iloc[-1], 2)
 
     # Fundamental data
-    info = stock.info
+    try:
+        info = stock.info
+    except Exception as e:
+        print(f"Failed to fetch info for {ticker}: {e}")
+        info = {}
 
     # True 52-week high/low from Yahoo Finance (not derived from our fetch window)
     price_52w_high = info.get("fiftyTwoWeekHigh") or round(hist["High"].max(), 2)

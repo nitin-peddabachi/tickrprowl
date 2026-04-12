@@ -21,9 +21,12 @@ def check_alerts():
         tickers = list(set(a.ticker for a in alerts))
         analyses = {}
         for ticker in tickers:
-            result = get_stock_analysis(ticker)
-            if "error" not in result:
-                analyses[ticker] = result
+            try:
+                result = get_stock_analysis(ticker)
+                if "error" not in result:
+                    analyses[ticker] = result
+            except Exception as e:
+                print(f"  Failed to fetch {ticker}: {e}")
 
         now = datetime.utcnow()
         cooldown = timedelta(hours=4)  # Don't re-trigger same alert within 4 hours
@@ -74,5 +77,6 @@ def check_alerts():
         db.commit()
     except Exception as e:
         print(f"Alert check error: {e}")
+        db.rollback()
     finally:
         db.close()
