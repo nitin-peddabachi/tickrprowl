@@ -207,23 +207,32 @@ def get_price_history(ticker: str, period: str = "6mo") -> list:
 
     fetch_period = period if period not in {"1mo"} else "3mo"
 
-    stock = yf.Ticker(ticker)
-    hist = stock.history(period=fetch_period)
+    try:
+        stock = yf.Ticker(ticker)
+        hist = stock.history(period=fetch_period)
+    except Exception as e:
+        print(f"Failed to fetch price history for {ticker}: {e}")
+        return []
+
     if hist.empty:
         return []
 
-    close = hist["Close"]
+    try:
+        close = hist["Close"]
 
-    rsi_series = ta.momentum.RSIIndicator(close, window=14).rsi()
+        rsi_series = ta.momentum.RSIIndicator(close, window=14).rsi()
 
-    bb = ta.volatility.BollingerBands(close, window=20)
-    bb_upper = bb.bollinger_hband()
-    bb_lower = bb.bollinger_lband()
-    bb_mid = bb.bollinger_mavg()
+        bb = ta.volatility.BollingerBands(close, window=20)
+        bb_upper = bb.bollinger_hband()
+        bb_lower = bb.bollinger_lband()
+        bb_mid = bb.bollinger_mavg()
 
-    stoch = ta.momentum.StochasticOscillator(hist["High"], hist["Low"], close, window=14, smooth_window=3)
-    stoch_k = stoch.stoch()
-    stoch_d = stoch.stoch_signal()
+        stoch = ta.momentum.StochasticOscillator(hist["High"], hist["Low"], close, window=14, smooth_window=3)
+        stoch_k = stoch.stoch()
+        stoch_d = stoch.stoch_signal()
+    except Exception as e:
+        print(f"Failed to compute indicators for history {ticker}: {e}")
+        return []
 
     if period == "1mo":
         cutoff = hist.index[-1] - pd.DateOffset(months=1)

@@ -60,6 +60,8 @@ def _fetch_many(ticker_list: list) -> list:
 def scan_stocks(tickers: str):
     """Scan comma-separated tickers, e.g. ?tickers=AAPL,MSFT,TSLA"""
     ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    if len(ticker_list) > 50:
+        raise HTTPException(status_code=400, detail="Too many tickers — limit is 50 per scan")
     return _fetch_many(ticker_list)
 
 
