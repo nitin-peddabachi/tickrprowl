@@ -499,7 +499,7 @@ def get_stock_analysis(ticker: str) -> dict:
             "profit_margin": profit_margin,
             "roe": roe,
             "roa": roa,
-            "dividend_yield": dividend_yield,
+            "dividend_yield": dividend_yield / 100 if dividend_yield is not None and dividend_yield > 1 else dividend_yield,
             "beta": beta,
             "short_percent_of_float": round(short_percent_of_float * 100, 2) if short_percent_of_float is not None else None,
             "dcf_value": dcf_value,
