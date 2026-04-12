@@ -208,6 +208,7 @@ export default function PortfolioPage() {
   const [loading, setLoading] = useState(true);
   const [showImport, setShowImport] = useState(false);
   const [error, setError] = useState("");
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [accountFilter, setAccountFilter] = useState("all");
   const [brokerFilter, setBrokerFilter] = useState("all");
   const [sortKey, setSortKey] = useState("current_value");
@@ -215,9 +216,11 @@ export default function PortfolioPage() {
 
   const fetchPortfolio = async () => {
     setLoading(true);
+    setError("");
     try {
       const res = await axios.get(`${API}/`, { timeout: 60000 });
       setPositions(res.data);
+      setLastUpdated(new Date());
     } catch {
       setError("Failed to load portfolio. Is the backend running?");
     } finally {
@@ -303,12 +306,26 @@ export default function PortfolioPage() {
               Consolidated across all brokers · live analysis overlaid
             </p>
           </div>
-          <button
-            onClick={() => setShowImport(true)}
-            className="text-sm px-4 py-2 rounded-lg border border-gray-700 text-gray-300 hover:border-emerald-500 hover:text-emerald-400 transition-colors"
-          >
-            ↑ Import CSV
-          </button>
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex gap-2">
+              <button
+                onClick={fetchPortfolio}
+                disabled={loading}
+                className="text-sm px-4 py-2 rounded-lg border border-gray-700 text-gray-300 hover:border-emerald-500 hover:text-emerald-400 transition-colors disabled:opacity-50"
+              >
+                {loading ? "Refreshing…" : "↺ Refresh"}
+              </button>
+              <button
+                onClick={() => setShowImport(true)}
+                className="text-sm px-4 py-2 rounded-lg border border-gray-700 text-gray-300 hover:border-emerald-500 hover:text-emerald-400 transition-colors"
+              >
+                ↑ Import CSV
+              </button>
+            </div>
+            {lastUpdated && (
+              <p className="text-xs text-gray-600">Updated {lastUpdated.toLocaleTimeString()}</p>
+            )}
+          </div>
         </div>
 
         {showImport && (

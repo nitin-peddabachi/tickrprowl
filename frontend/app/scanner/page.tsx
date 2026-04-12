@@ -18,6 +18,8 @@ export default function ScannerPage() {
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
   const [hasScanned, setHasScanned] = useState(false);
+  const [scannedCount, setScannedCount] = useState(0);
+
   const runPreset = async (presetKey: string) => {
     setLoading(true);
     setActivePreset(presetKey);
@@ -28,6 +30,7 @@ export default function ScannerPage() {
       const res = await axios.get(`http://localhost:8000/api/stocks/batch/preset/${presetKey}`);
       setResults(res.data);
       setHasScanned(true);
+      setScannedCount(0);
       setProgress("");
     } catch (e: any) {
       setError("Failed to run scan. Is the backend running?");
@@ -39,6 +42,11 @@ export default function ScannerPage() {
 
   const runCustom = async () => {
     if (!customTickers.trim()) return;
+    const tickerList = customTickers.split(",").map(t => t.trim()).filter(Boolean);
+    if (tickerList.length > 50) {
+      setError("Too many tickers — limit is 50 per scan");
+      return;
+    }
     setLoading(true);
     setActivePreset("");
     setError("");
@@ -48,6 +56,7 @@ export default function ScannerPage() {
       const res = await axios.get(`http://localhost:8000/api/stocks/batch/scan?tickers=${encodeURIComponent(customTickers)}`);
       setResults(res.data);
       setHasScanned(true);
+      setScannedCount(tickerList.length);
       setProgress("");
     } catch (e: any) {
       setError("Failed to run scan. Is the backend running?");
@@ -121,7 +130,13 @@ export default function ScannerPage() {
         {results.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-4">
-                  <p className="text-gray-400 text-sm">{results.length} stocks analyzed · sorted by oversold score</p>
+                  <p className="text-gray-400 text-sm">
+                    {results.length} stocks analyzed
+                    {scannedCount > 0 && results.length < scannedCount && (
+                      <span className="text-gray-600 ml-1">({scannedCount - results.length} skipped — no data)</span>
+                    )}
+                    {" · sorted by oversold score"}
+                  </p>
               <p className="text-gray-500 text-xs">
                 {results.filter(s => s.signal === "Strong Buy").length} Strong Buy ·{" "}
                 {results.filter(s => s.signal === "Buy").length} Buy ·{" "}
