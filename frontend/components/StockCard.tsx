@@ -337,6 +337,23 @@ export default function StockCard({ stock }: Props) {
                     }
                   />
                 )}
+                {stock.technicals.volume_ratio != null && (
+                  <MetricRow
+                    label="Volume Ratio"
+                    value={`${num(stock.technicals.volume_ratio)}×`}
+                    color={stock.technicals.volume_ratio > 2 ? "text-orange-400" : stock.technicals.volume_ratio > 1.5 ? "text-yellow-400" : "text-white"}
+                  />
+                )}
+                {stock.technicals.obv_trend != null && (
+                  <MetricRow
+                    label="OBV Trend"
+                    value={
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] ${stock.technicals.obv_trend === "rising" ? "bg-emerald-400/10 text-emerald-400" : "bg-red-400/10 text-red-400"}`}>
+                        {stock.technicals.obv_trend === "rising" ? "↑ Rising" : "↓ Falling"}
+                      </span>
+                    }
+                  />
+                )}
                 <MetricRow label="52w High" value={`$${num(stock.price_52w_high)}`} />
                 <MetricRow label="52w Low"  value={`$${num(stock.price_52w_low)}`} />
               </div>
@@ -358,6 +375,15 @@ export default function StockCard({ stock }: Props) {
                 label="Forward P/E"
                 value={num(stock.fundamentals.forward_pe)}
                 color={stock.fundamentals.forward_pe && stock.fundamentals.forward_pe < 15 ? "text-emerald-400" : "text-white"}
+              />
+              <MetricRow
+                label="PEG Ratio"
+                value={num(stock.fundamentals.peg_ratio)}
+                color={
+                  stock.fundamentals.peg_ratio == null ? "text-white" :
+                  stock.fundamentals.peg_ratio < 1 ? "text-emerald-400" :
+                  stock.fundamentals.peg_ratio > 2 ? "text-red-400" : "text-white"
+                }
               />
               <MetricRow label="P/B Ratio" value={num(stock.fundamentals.pb_ratio)} />
               <MetricRow
@@ -384,6 +410,15 @@ export default function StockCard({ stock }: Props) {
                 label="Beta"
                 value={num(stock.fundamentals.beta)}
                 color={stock.fundamentals.beta > 1.5 ? "text-orange-400" : "text-white"}
+              />
+              <MetricRow
+                label="Short Interest"
+                value={stock.fundamentals.short_percent_of_float != null ? `${num(stock.fundamentals.short_percent_of_float)}%` : "N/A"}
+                color={
+                  stock.fundamentals.short_percent_of_float == null ? "text-white" :
+                  stock.fundamentals.short_percent_of_float > 20 ? "text-orange-400" :
+                  stock.fundamentals.short_percent_of_float > 10 ? "text-yellow-400" : "text-white"
+                }
               />
             </div>
             <div>
