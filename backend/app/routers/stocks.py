@@ -1,6 +1,9 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from fastapi import APIRouter, HTTPException
+from datetime import datetime, timedelta
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 from app.services.stock_analyzer import get_stock_analysis, get_price_history
+from app.models.database import get_db, ScoreHistory
 
 router = APIRouter()
 
@@ -78,6 +81,24 @@ def scan_preset(preset_name: str):
 @router.get("/presets")
 def list_presets():
     return {name: tickers for name, tickers in PRESETS.items()}
+
+
+@router.get("/{ticker}/score-history")
+def score_history(ticker: str, days: int = 30, db: Session = Depends(get_db)):
+    """Return daily oversold score history for the last N days (one point per day, latest wins)."""
+    cutoff = datetime.utcnow() - timedelta(days=days)
+    rows = (
+        db.query(ScoreHistory)
+        .filter(ScoreHistory.ticker == ticker.upper(), ScoreHistory.recorded_at >= cutoff)
+        .order_by(ScoreHistory.recorded_at.asc())
+        .all()
+    )
+    # Deduplicate to one point per calendar day (keep last record of each day)
+    by_day: dict = {}
+    for r in rows:
+        day = r.recorded_at.strftime("%Y-%m-%d")
+        by_day[day] = {"date": day, "score": r.score, "signal": r.signal, "rsi": r.rsi, "price": r.price}
+    return list(by_day.values())
 
 
 @router.get("/{ticker}/history")

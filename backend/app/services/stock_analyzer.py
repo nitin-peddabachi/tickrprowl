@@ -3,6 +3,7 @@ import pandas as pd
 import ta
 import numpy as np
 from app.services import cache as _cache
+from app.models.database import SessionLocal, ScoreHistory
 
 
 def calculate_dcf_value(stock: yf.Ticker, growth_rate: float = None, discount_rate: float = 0.10, terminal_growth: float = 0.025, projection_years: int = 5) -> float:
@@ -201,6 +202,89 @@ def _calculate_fcf_yield(stock: yf.Ticker, market_cap) -> float:
         return None
 
 
+def _get_insider_activity(stock: yf.Ticker) -> dict:
+    """Fetch recent insider transactions (last 6 months) from yfinance."""
+    empty = {"transactions": [], "buy_count": 0, "sell_count": 0, "net_shares": 0, "signal": "neutral"}
+    try:
+        df = stock.insider_transactions
+        if df is None or df.empty:
+            return empty
+
+        df = df.reset_index()
+
+        # Detect column names dynamically (yfinance schema varies by version)
+        cols_lower = {c.lower(): c for c in df.columns}
+        date_col  = next((cols_lower[k] for k in cols_lower if "start" in k or "date" in k), None)
+        shares_col = next((cols_lower[k] for k in cols_lower if "share" in k), None)
+        value_col  = next((cols_lower[k] for k in cols_lower if "value" in k), None)
+        name_col   = next((cols_lower[k] for k in cols_lower if "insider" in k or "name" in k), None)
+        pos_col    = next((cols_lower[k] for k in cols_lower if "position" in k or "title" in k), None)
+        text_col   = next((cols_lower[k] for k in cols_lower if "text" in k or "transaction" in k), None)
+
+        # Filter to last 6 months
+        if date_col:
+            df[date_col] = pd.to_datetime(df[date_col], errors="coerce", utc=True)
+            cutoff = pd.Timestamp.now(tz="UTC") - pd.DateOffset(months=6)
+            df = df[df[date_col] >= cutoff]
+
+        transactions = []
+        for _, row in df.head(15).iterrows():
+            t = {}
+            if date_col and pd.notna(row.get(date_col)):
+                t["date"] = str(row[date_col].date())
+            if name_col and pd.notna(row.get(name_col)):
+                t["insider"] = str(row[name_col])
+            if pos_col and pd.notna(row.get(pos_col)):
+                t["position"] = str(row[pos_col])
+            if shares_col and pd.notna(row.get(shares_col)):
+                t["shares"] = int(row[shares_col])
+            if value_col and pd.notna(row.get(value_col)):
+                t["value"] = int(row[value_col])
+
+            # Determine buy/sell from text first, then shares sign
+            tx_type = "unknown"
+            if text_col and pd.notna(row.get(text_col)):
+                text_lower = str(row[text_col]).lower()
+                if any(w in text_lower for w in ("purchase", "buy", "acquisition", "acquired")):
+                    tx_type = "buy"
+                elif any(w in text_lower for w in ("sale", "sell", "sold", "disposition", "disposed")):
+                    tx_type = "sell"
+            if tx_type == "unknown" and shares_col and pd.notna(row.get(shares_col)):
+                tx_type = "buy" if row[shares_col] > 0 else "sell"
+            t["type"] = tx_type
+            transactions.append(t)
+
+        # Net shares: buys positive, sales negative
+        net_shares = 0
+        for t in transactions:
+            shares = t.get("shares", 0) or 0
+            if t["type"] == "buy":
+                net_shares += abs(shares)
+            elif t["type"] == "sell":
+                net_shares -= abs(shares)
+
+        buy_count  = sum(1 for t in transactions if t.get("type") == "buy")
+        sell_count = sum(1 for t in transactions if t.get("type") == "sell")
+
+        if net_shares > 10000:
+            signal = "bullish"
+        elif net_shares < -10000:
+            signal = "bearish"
+        else:
+            signal = "neutral"
+
+        return {
+            "transactions": transactions,
+            "buy_count": buy_count,
+            "sell_count": sell_count,
+            "net_shares": net_shares,
+            "signal": signal,
+        }
+    except Exception as e:
+        print(f"Insider activity error: {e}")
+        return empty
+
+
 def get_price_history(ticker: str, period: str = "6mo") -> list:
     valid_periods = {"1mo", "3mo", "6mo", "1y", "2y"}
     if period not in valid_periods:
@@ -258,6 +342,18 @@ def get_price_history(ticker: str, period: str = "6mo") -> list:
         })
 
     return result
+
+
+def _record_score(ticker: str, score: int, signal: str, rsi: float, price: float) -> None:
+    """Persist a score snapshot to score_history. Called only on fresh computations (cache misses)."""
+    try:
+        db = SessionLocal()
+        row = ScoreHistory(ticker=ticker.upper(), score=score, signal=signal, rsi=round(rsi, 2), price=price)
+        db.add(row)
+        db.commit()
+        db.close()
+    except Exception as e:
+        print(f"Score history write error for {ticker}: {e}")
 
 
 def get_stock_analysis(ticker: str) -> dict:
@@ -367,6 +463,9 @@ def get_stock_analysis(ticker: str) -> dict:
 
     # Piotroski F-Score
     piotroski = _calculate_piotroski_fscore(stock)
+
+    # Insider activity (last 6 months)
+    insider_activity = _get_insider_activity(stock)
 
     # Quarterly financials (last 4 quarters)
     try:
@@ -525,8 +624,10 @@ def get_stock_analysis(ticker: str) -> dict:
         "steal_conditions": absolute_steal["conditions"],
         "is_overbought": overbought["is_overbought"],
         "overbought_conditions": overbought["conditions"],
+        "insider_activity": insider_activity,
     }
     _cache.set(ticker.upper(), result)
+    _record_score(ticker, oversold_score, signal, rsi, current_price)
     return result
 
 

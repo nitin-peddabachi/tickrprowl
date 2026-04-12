@@ -26,6 +26,7 @@ app.include_router(alerts.router, prefix="/api/alerts", tags=["alerts"])
 app.include_router(portfolio.router, prefix="/api/portfolio", tags=["portfolio"])
 
 # Background scheduler — checks alerts every 30 minutes
+# Note: score_snapshot job is disabled until the app is deployed
 scheduler = BackgroundScheduler()
 scheduler.add_job(check_alerts, "interval", minutes=30, id="alert_check")
 scheduler.start()
