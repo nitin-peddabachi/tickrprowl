@@ -43,7 +43,8 @@ def calculate_dcf_value(stock: yf.Ticker, growth_rate: float = None, discount_ra
                     growth_rate = 0.05
             else:
                 growth_rate = 0.05
-            growth_rate = min(max(growth_rate, 0.01), 0.15)
+        # Clamp growth rate regardless of source — external values (e.g. revenueGrowth) can be extreme
+        growth_rate = min(max(growth_rate, 0.01), 0.15)
 
         future_fcf = []
         for year in range(1, projection_years + 1):
@@ -188,8 +189,8 @@ def _calculate_fcf_yield(stock: yf.Ticker, market_cap) -> float:
         cashflow = stock.cashflow
         if "Free Cash Flow" in cashflow.index:
             fcf = float(cashflow.loc["Free Cash Flow"].iloc[0])
-        elif "Operating Cash Flow" in cashflow.index and "Capital Expenditure" in cashflow.index:
-            fcf = float(cashflow.loc["Operating Cash Flow"].iloc[0]) + float(cashflow.loc["Capital Expenditure"].iloc[0])
+        elif "Operating Cash Flow" in cashflow.index and "Capital Expenditures" in cashflow.index:
+            fcf = float(cashflow.loc["Operating Cash Flow"].iloc[0]) + float(cashflow.loc["Capital Expenditures"].iloc[0])
         else:
             return None
         if pd.isna(fcf):
