@@ -5,6 +5,7 @@ from typing import Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from app.models.database import get_db, WatchlistItem
 from app.services.stock_analyzer import get_stock_analysis
+from app.dependencies.auth import get_current_user
 
 router = APIRouter()
 
@@ -18,12 +19,11 @@ class WatchlistAdd(BaseModel):
 
 
 @router.get("/")
-def get_watchlist(db: Session = Depends(get_db)):
-    items = db.query(WatchlistItem).all()
+def get_watchlist(db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
+    items = db.query(WatchlistItem).filter(WatchlistItem.user_id == user_id).all()
     if not items:
         return []
 
-    # Fetch all analyses concurrently
     analyses: dict[str, dict] = {}
     with ThreadPoolExecutor(max_workers=10) as pool:
         futures = {pool.submit(get_stock_analysis, item.ticker): item.ticker for item in items}
@@ -50,13 +50,15 @@ def get_watchlist(db: Session = Depends(get_db)):
 
 
 @router.post("/")
-def add_to_watchlist(payload: WatchlistAdd, db: Session = Depends(get_db)):
+def add_to_watchlist(payload: WatchlistAdd, db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
     ticker = payload.ticker.upper()
-    existing = db.query(WatchlistItem).filter(WatchlistItem.ticker == ticker).first()
+    existing = db.query(WatchlistItem).filter(
+        WatchlistItem.ticker == ticker,
+        WatchlistItem.user_id == user_id,
+    ).first()
     if existing:
         raise HTTPException(status_code=400, detail=f"{ticker} is already in your watchlist")
 
-    # Auto-fill company name and sector if not provided
     company_name = payload.company_name
     sector = payload.sector
     if not company_name or not sector:
@@ -67,6 +69,7 @@ def add_to_watchlist(payload: WatchlistAdd, db: Session = Depends(get_db)):
 
     item = WatchlistItem(
         ticker=ticker,
+        user_id=user_id,
         company_name=company_name,
         sector=sector,
         notes=payload.notes,
@@ -78,8 +81,11 @@ def add_to_watchlist(payload: WatchlistAdd, db: Session = Depends(get_db)):
 
 
 @router.patch("/{ticker}")
-def update_watchlist_item(ticker: str, payload: WatchlistAdd, db: Session = Depends(get_db)):
-    item = db.query(WatchlistItem).filter(WatchlistItem.ticker == ticker.upper()).first()
+def update_watchlist_item(ticker: str, payload: WatchlistAdd, db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
+    item = db.query(WatchlistItem).filter(
+        WatchlistItem.ticker == ticker.upper(),
+        WatchlistItem.user_id == user_id,
+    ).first()
     if not item:
         raise HTTPException(status_code=404, detail=f"{ticker} not in watchlist")
     if payload.notes is not None:
@@ -91,8 +97,11 @@ def update_watchlist_item(ticker: str, payload: WatchlistAdd, db: Session = Depe
 
 
 @router.delete("/{ticker}")
-def remove_from_watchlist(ticker: str, db: Session = Depends(get_db)):
-    item = db.query(WatchlistItem).filter(WatchlistItem.ticker == ticker.upper()).first()
+def remove_from_watchlist(ticker: str, db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
+    item = db.query(WatchlistItem).filter(
+        WatchlistItem.ticker == ticker.upper(),
+        WatchlistItem.user_id == user_id,
+    ).first()
     if not item:
         raise HTTPException(status_code=404, detail=f"{ticker} not in watchlist")
     db.delete(item)

@@ -7,6 +7,7 @@ import csv
 import io
 from app.models.database import get_db, PortfolioPosition
 from app.services.stock_analyzer import get_stock_analysis
+from app.dependencies.auth import get_current_user
 
 router = APIRouter()
 
@@ -173,6 +174,7 @@ async def import_portfolio(
     file: UploadFile = File(...),
     account_label: str = Form(""),
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
 ):
     content = (await file.read()).decode("utf-8-sig")
     clean_lines = [l for l in content.splitlines() if not l.startswith('"')]
@@ -192,22 +194,25 @@ async def import_portfolio(
         if parsed:
             positions_data.append(parsed)
 
-    # Smart clear: replace only the imported broker's data
+    # Smart clear: replace only the imported broker's data for this user
     if broker == "etrade" and account_label:
         db.query(PortfolioPosition).filter(
+            PortfolioPosition.user_id == user_id,
             PortfolioPosition.broker == "etrade",
             PortfolioPosition.account_name == (account_label or "E*Trade"),
         ).delete()
     elif broker == "etrade_espp":
         db.query(PortfolioPosition).filter(
-            PortfolioPosition.broker == "etrade_espp"
+            PortfolioPosition.user_id == user_id,
+            PortfolioPosition.broker == "etrade_espp",
         ).delete()
     else:
         db.query(PortfolioPosition).filter(
-            PortfolioPosition.broker == broker
+            PortfolioPosition.user_id == user_id,
+            PortfolioPosition.broker == broker,
         ).delete()
 
-    db.add_all([PortfolioPosition(**p) for p in positions_data])
+    db.add_all([PortfolioPosition(user_id=user_id, **p) for p in positions_data])
     db.commit()
 
     return {
@@ -218,8 +223,8 @@ async def import_portfolio(
 
 
 @router.get("/")
-def get_portfolio(db: Session = Depends(get_db)):
-    positions = db.query(PortfolioPosition).order_by(PortfolioPosition.current_value.desc()).all()
+def get_portfolio(db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
+    positions = db.query(PortfolioPosition).filter(PortfolioPosition.user_id == user_id).order_by(PortfolioPosition.current_value.desc()).all()
 
     unique_tickers = list({p.ticker for p in positions if p.ticker not in CASH_SYMBOLS})
     analyses: dict[str, dict] = {}
@@ -256,8 +261,8 @@ def get_portfolio(db: Session = Depends(get_db)):
 
 
 @router.get("/summary")
-def get_summary(db: Session = Depends(get_db)):
-    positions = db.query(PortfolioPosition).all()
+def get_summary(db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
+    positions = db.query(PortfolioPosition).filter(PortfolioPosition.user_id == user_id).all()
     total_value = sum(p.current_value or 0 for p in positions)
     total_gl = sum(p.total_gl_dollar or 0 for p in positions)
     total_cost = sum(p.cost_basis_total or 0 for p in positions)
@@ -283,7 +288,7 @@ def get_summary(db: Session = Depends(get_db)):
 
 
 @router.delete("/")
-def clear_portfolio(db: Session = Depends(get_db)):
-    db.query(PortfolioPosition).delete()
+def clear_portfolio(db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
+    db.query(PortfolioPosition).filter(PortfolioPosition.user_id == user_id).delete()
     db.commit()
     return {"message": "Portfolio cleared"}

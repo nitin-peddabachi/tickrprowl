@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import axios from "axios";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { useApi } from "@/lib/api";
 import PriceChart from "@/components/PriceChart";
 import ScoreHistoryChart from "@/components/ScoreHistoryChart";
 
@@ -78,11 +78,12 @@ type Tab = "technicals" | "fundamentals" | "analysis" | "insider";
 export default function StockCard({ stock }: Props) {
   const [watchlistStatus, setWatchlistStatus] = useState<"idle" | "adding" | "added" | "error">("idle");
   const [activeTab, setActiveTab] = useState<Tab>("technicals");
+  const api = useApi();
 
   const addToWatchlist = async () => {
     setWatchlistStatus("adding");
     try {
-      await axios.post("http://localhost:8000/api/watchlist/", { ticker: stock.ticker });
+      await api.post("/api/watchlist/", { ticker: stock.ticker });
       setWatchlistStatus("added");
     } catch (e: any) {
       const msg = e.response?.data?.detail || "";

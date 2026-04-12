@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import axios from "axios";
+import { publicApi } from "@/lib/api";
 import StockCard from "@/components/StockCard";
 
 export default function StockPage() {
@@ -13,8 +13,8 @@ export default function StockPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    axios
-      .get(`http://localhost:8000/api/stocks/${ticker.toUpperCase()}`)
+    publicApi
+      .get(`/api/stocks/${ticker.toUpperCase()}`)
       .then((res) => setStock(res.data))
       .catch(() => setError(`Could not load data for ${ticker.toUpperCase()}.`))
       .finally(() => setLoading(false));

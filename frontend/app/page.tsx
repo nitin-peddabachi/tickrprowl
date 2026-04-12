@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import axios from "axios";
 import StockCard from "@/components/StockCard";
 import SearchBar from "@/components/SearchBar";
+import { publicApi } from "@/lib/api";
 
 const QUICK_PICKS = ["AAPL", "NVDA", "MSFT", "TSLA", "AMD", "GOOGL", "META", "JPM"];
 
@@ -18,7 +18,7 @@ export default function Home() {
     setLoadingTicker(ticker.toUpperCase());
     setError("");
     try {
-      const res = await axios.get(`http://localhost:8000/api/stocks/${ticker}`);
+      const res = await publicApi.get(`/api/stocks/${ticker}`);
       setStocks((prev) => {
         const filtered = prev.filter((s) => s.ticker !== res.data.ticker);
         return [res.data, ...filtered];
