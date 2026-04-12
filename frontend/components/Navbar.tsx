@@ -3,23 +3,27 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { UserButton, SignInButton, Show, useAuth } from "@clerk/nextjs";
+import { useApi } from "@/lib/api";
 
 export default function Navbar() {
   const pathname = usePathname();
   const [unread, setUnread] = useState(0);
+  const { isSignedIn } = useAuth();
+  const api = useApi();
 
   useEffect(() => {
+    if (!isSignedIn) return;
     const fetchUnread = () => {
-      axios
-        .get("http://localhost:8000/api/alerts/notifications/unread-count")
+      api
+        .get("/api/alerts/notifications/unread-count")
         .then((res) => setUnread(res.data.count))
         .catch(() => {});
     };
     fetchUnread();
     const interval = setInterval(fetchUnread, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isSignedIn, api]);
 
   const links = [
     { href: "/", label: "Search" },
@@ -45,31 +49,44 @@ export default function Navbar() {
           <span className="text-gray-600 text-xs font-mono">v1.1.0</span>
         </Link>
 
-        {/* Links */}
-        <div className="flex items-center">
-          {links.map((link) => {
-            const active = pathname === link.href;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`relative px-4 py-4 text-sm font-medium transition-colors ${
-                  active ? "text-white" : "text-gray-400 hover:text-gray-200"
-                }`}
-              >
-                {link.label}
-                {link.href === "/alerts" && unread > 0 && (
-                  <span className="absolute top-2.5 right-1 bg-emerald-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center font-bold leading-none">
-                    {unread > 9 ? "9+" : unread}
-                  </span>
-                )}
-                {/* Active underline */}
-                {active && (
-                  <span className="absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-emerald-400" />
-                )}
-              </Link>
-            );
-          })}
+        <div className="flex items-center gap-4">
+          {/* Nav links */}
+          <div className="flex items-center">
+            {links.map((link) => {
+              const active = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`relative px-4 py-4 text-sm font-medium transition-colors ${
+                    active ? "text-white" : "text-gray-400 hover:text-gray-200"
+                  }`}
+                >
+                  {link.label}
+                  {link.href === "/alerts" && unread > 0 && (
+                    <span className="absolute top-2.5 right-1 bg-emerald-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center font-bold leading-none">
+                      {unread > 9 ? "9+" : unread}
+                    </span>
+                  )}
+                  {active && (
+                    <span className="absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-emerald-400" />
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Auth */}
+          <Show when="signed-in">
+            <UserButton />
+          </Show>
+          <Show when="signed-out">
+            <SignInButton mode="modal">
+              <button className="text-sm px-4 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition-colors">
+                Sign in
+              </button>
+            </SignInButton>
+          </Show>
         </div>
       </div>
     </nav>

@@ -2,10 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import StockModal from "@/components/StockModal";
-import axios from "axios";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
-
-const API = "http://localhost:8000/api/portfolio";
+import { useApi } from "@/lib/api";
 
 const BROKER_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   fidelity:    { label: "Fidelity",     color: "text-green-400",  bg: "bg-green-400/10 border-green-400/30"  },
@@ -50,6 +48,7 @@ function fmtValue(val: number | null | undefined) {
 
 // ── Import Modal ──────────────────────────────────────────────────────────────
 function ImportModal({ onClose, onImported }: { onClose: () => void; onImported: () => void }) {
+  const api = useApi();
   const [file, setFile] = useState<File | null>(null);
   const [detectedBroker, setDetectedBroker] = useState<string | null>(null);
   const [accountLabel, setAccountLabel] = useState("");
@@ -94,7 +93,7 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
     form.append("file", file);
     form.append("account_label", accountLabel);
     try {
-      const res = await axios.post(`${API}/import`, form, {
+      const res = await api.post("/api/portfolio/import", form, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setResult(`✓ ${res.data.message}`);
@@ -213,12 +212,13 @@ export default function PortfolioPage() {
   const [brokerFilter, setBrokerFilter] = useState("all");
   const [sortKey, setSortKey] = useState("current_value");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const api = useApi();
 
   const fetchPortfolio = async () => {
     setLoading(true);
     setError("");
     try {
-      const res = await axios.get(`${API}/`, { timeout: 60000 });
+      const res = await api.get("/api/portfolio/", { timeout: 60000 });
       setPositions(res.data);
       setLastUpdated(new Date());
     } catch {

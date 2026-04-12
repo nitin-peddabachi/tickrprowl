@@ -123,6 +123,7 @@ def check_alerts():
             if triggered and current_value is not None:
                 notification = Notification(
                     ticker=alert.ticker,
+                    user_id=alert.user_id,
                     alert_type=alert.alert_type,
                     threshold=alert.threshold,
                     current_value=current_value,

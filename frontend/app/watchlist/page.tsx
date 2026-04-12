@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
 import WatchlistCard from "@/components/WatchlistCard";
+import { useApi } from "@/lib/api";
 
 function exportWatchlistCsv(items: any[]) {
   const headers = ["Ticker", "Company", "Sector", "Signal", "Score", "Price", "RSI", "P/E", "Rev Growth %", "Target Price", "Notes", "Added"];
@@ -38,12 +38,13 @@ export default function WatchlistPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const api = useApi();
 
   const fetchWatchlist = async () => {
     setLoading(true);
     setError("");
     try {
-      const res = await axios.get("http://localhost:8000/api/watchlist/");
+      const res = await api.get("/api/watchlist/");
       setItems(res.data);
       setLastUpdated(new Date());
     } catch {
@@ -54,7 +55,7 @@ export default function WatchlistPage() {
   };
 
   const removeStock = async (ticker: string) => {
-    await axios.delete(`http://localhost:8000/api/watchlist/${ticker}`);
+    await api.delete(`/api/watchlist/${ticker}`);
     setItems((prev) => prev.filter((i) => i.ticker !== ticker));
   };
 

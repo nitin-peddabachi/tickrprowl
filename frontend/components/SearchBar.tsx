@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import axios from "axios";
+import { publicApi } from "@/lib/api";
 
 interface Props {
   onSearch: (ticker: string) => void;
@@ -33,7 +33,7 @@ export default function SearchBar({ onSearch, loading }: Props) {
     }
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await axios.get(`http://localhost:8000/api/stocks/search?q=${encodeURIComponent(input)}`);
+        const res = await publicApi.get(`/api/stocks/search?q=${encodeURIComponent(input)}`);
         setSuggestions(res.data);
         setShowDropdown(res.data.length > 0);
         setActiveIndex(-1);
