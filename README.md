@@ -38,25 +38,7 @@ docker compose down
 
 ## Telegram Alerts
 
-When an alert rule triggers, you get a push notification on your phone via a Telegram bot. To set it up:
-
-1. Create a bot via [@BotFather](https://t.me/BotFather) — send `/newbot`, copy the token it gives you
-2. Start a conversation with your bot, then visit `https://api.telegram.org/botYOUR_TOKEN/getUpdates` to get your chat ID
-3. Create `backend/.env` with your credentials:
-
-```
-TELEGRAM_BOT_TOKEN=your_token_here
-TELEGRAM_CHAT_ID=your_chat_id_here
-```
-
-4. Restart the app — alerts will now send Telegram messages when they trigger
-
-Notifications look like:
-
-> 🔔 Stockr Alert
-> AAPL RSI is 28.4 — below your alert threshold of 30.0
-
-A 4-hour cooldown prevents the same alert from firing repeatedly.
+Set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` in `backend/.env` to receive push notifications when alerts trigger.
 
 ## Importing your portfolio
 
