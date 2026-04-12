@@ -403,8 +403,8 @@ export default function StockCard({ stock }: Props) {
               />
               <MetricRow
                 label="Dividend Yield"
-                value={stock.fundamentals.dividend_yield != null ? `${(stock.fundamentals.dividend_yield * 100).toFixed(2)}%` : "N/A"}
-                color={stock.fundamentals.dividend_yield > 0.03 ? "text-emerald-400" : "text-white"}
+                value={stock.fundamentals.dividend_yield != null ? `${num(stock.fundamentals.dividend_yield)}%` : "N/A"}
+                color={stock.fundamentals.dividend_yield > 3 ? "text-emerald-400" : "text-white"}
               />
               <MetricRow
                 label="Beta"
