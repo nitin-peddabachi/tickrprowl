@@ -131,7 +131,7 @@ def check_alerts():
                 db.add(notification)
                 alert.last_triggered = now
                 print(f"  ALERT: {message}")
-                send_telegram(f"🔔 Stockr Alert\n{message}")
+                send_telegram(f"🔔 TickrProwl Alert\n{message}")
 
         db.commit()
     except Exception as e:

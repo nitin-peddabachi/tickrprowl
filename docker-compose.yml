@@ -4,9 +4,9 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - stockr_data:/data
+      - tickrprowl_data:/data
     environment:
-      - DATABASE_URL=sqlite:////data/stockr.db
+      - DATABASE_URL=sqlite:////data/tickrprowl.db
     restart: unless-stopped
 
   frontend:
@@ -18,4 +18,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  stockr_data:
+  tickrprowl_data:

@@ -40,7 +40,7 @@ export default function Navbar() {
             </svg>
           </div>
           <span className="text-white font-bold text-lg tracking-tight">
-            Stock<span className="text-emerald-400">r</span>
+            Tickr<span className="text-emerald-400">Prowl</span>
           </span>
           <span className="text-gray-600 text-xs font-mono">v1.1.0</span>
         </Link>
