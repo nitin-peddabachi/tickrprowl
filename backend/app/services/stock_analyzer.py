@@ -297,6 +297,17 @@ def get_stock_analysis(ticker: str) -> dict:
         sma_50 = float(sma_50_series.iloc[-1]) if not pd.isna(sma_50_series.iloc[-1]) else None
         sma_200 = float(sma_200_series.iloc[-1]) if not pd.isna(sma_200_series.iloc[-1]) else None
         golden_cross = bool(sma_50 > sma_200) if (sma_50 is not None and sma_200 is not None) else None
+
+        # Volume trend — current volume vs 20-day average
+        volume = hist["Volume"]
+        vol_sma_20 = float(volume.rolling(window=20).mean().iloc[-1])
+        current_volume = int(volume.iloc[-1])
+        volume_ratio = round(current_volume / vol_sma_20, 2) if vol_sma_20 > 0 else None
+
+        # On-Balance Volume (OBV) — cumulative volume-weighted price direction
+        obv_series = ta.volume.OnBalanceVolumeIndicator(close, volume).on_balance_volume()
+        obv_sma = obv_series.rolling(window=20).mean()
+        obv_trend = "rising" if obv_series.iloc[-1] > obv_sma.iloc[-1] else "falling"
     except Exception as e:
         return {"error": f"Failed to compute technical indicators for {ticker}: {e}"}
 
@@ -336,6 +347,7 @@ def get_stock_analysis(ticker: str) -> dict:
     roa = info.get("returnOnAssets")
     dividend_yield = info.get("dividendYield")
     beta = info.get("beta")
+    short_percent_of_float = info.get("shortPercentOfFloat")  # e.g. 0.05 = 5%
     company_name = info.get("longName", ticker)
     sector = info.get("sector", "Unknown")
 
@@ -399,6 +411,7 @@ def get_stock_analysis(ticker: str) -> dict:
         piotroski_score=piotroski["score"],
         sma_50=sma_50,
         sma_200=sma_200,
+        volume_ratio=volume_ratio,
     )
 
     pct_from_low = round((current_price - price_52w_low) / price_52w_low * 100, 2) if price_52w_low else 0
@@ -426,6 +439,9 @@ def get_stock_analysis(ticker: str) -> dict:
         analyst_rating=analyst_rating,
         analyst_count=analyst_count,
         target_price_mean=target_price_mean,
+        volume_ratio=volume_ratio,
+        obv_trend=obv_trend,
+        short_percent_of_float=short_percent_of_float,
     )
     signal = signal_result["signal"]
     signal_reasons = signal_result["signal_reasons"]
@@ -469,6 +485,8 @@ def get_stock_analysis(ticker: str) -> dict:
             "sma_50": round(sma_50, 2) if sma_50 is not None else None,
             "sma_200": round(sma_200, 2) if sma_200 is not None else None,
             "golden_cross": golden_cross,
+            "volume_ratio": volume_ratio,
+            "obv_trend": obv_trend,
         },
         "fundamentals": {
             "pe_ratio": pe_ratio,
@@ -483,6 +501,7 @@ def get_stock_analysis(ticker: str) -> dict:
             "roa": roa,
             "dividend_yield": dividend_yield,
             "beta": beta,
+            "short_percent_of_float": round(short_percent_of_float * 100, 2) if short_percent_of_float is not None else None,
             "dcf_value": dcf_value,
             "ev_to_ebitda": ev_to_ebitda,
             "fcf_yield": fcf_yield,
@@ -515,7 +534,7 @@ def _calculate_oversold_score(
     rsi, bb_percent, pct_from_high, pe_ratio, forward_pe,
     debt_to_equity, revenue_growth, macd_line, signal_line,
     current_price, dcf_value, stoch_k, ev_to_ebitda, fcf_yield,
-    piotroski_score, sma_50=None, sma_200=None,
+    piotroski_score, sma_50=None, sma_200=None, volume_ratio=None,
 ) -> int:
     score = 0
 
@@ -555,6 +574,10 @@ def _calculate_oversold_score(
     if sma_50 is not None and current_price < sma_50:
         score += 5
     if sma_200 is not None and current_price < sma_200:
+        score += 5
+
+    # Volume confirmation — high volume on a selloff confirms genuine oversold pressure
+    if volume_ratio is not None and volume_ratio > 1.5:
         score += 5
 
     # Fundamentals bonus — strong fundamentals = good oversold buy
@@ -652,6 +675,7 @@ def _get_signal(
     piotroski_score, fcf_yield, ev_to_ebitda, peg_ratio=None,
     golden_cross=None, sma_50=None, sma_200=None,
     analyst_rating=None, analyst_count=None, target_price_mean=None,
+    volume_ratio=None, obv_trend=None, short_percent_of_float=None,
 ) -> dict:
     reasons = []
 
@@ -725,6 +749,14 @@ def _get_signal(
             reasons.append(f"FCF Yield of {fcf_yield:.1f}% — strong free cash generation")
         if macd_line is not None and signal_line is not None and macd_line > signal_line:
             reasons.append("MACD bullish crossover — momentum turning positive")
+        if volume_ratio is not None and volume_ratio > 1.5:
+            reasons.append(f"Volume {volume_ratio:.1f}× average — high-volume selloff confirms genuine oversold pressure")
+        if obv_trend == "rising":
+            reasons.append("OBV rising — buying pressure accumulating beneath the surface")
+        if short_percent_of_float is not None:
+            short_pct = short_percent_of_float * 100 if short_percent_of_float < 1 else short_percent_of_float
+            if short_pct > 20:
+                reasons.append(f"Short interest at {short_pct:.1f}% of float — potential short squeeze catalyst")
         if analyst_rating is not None and analyst_rating <= 2.0 and analyst_count:
             reasons.append(f"{analyst_count} analysts rate this Buy or better (consensus: {analyst_rating:.1f}/5)")
         if target_price_mean and current_price < target_price_mean:
@@ -754,6 +786,10 @@ def _get_signal(
             reasons.append(f"Revenue growing at {revenue_growth * 100:.1f}%")
         if ev_to_ebitda is not None and 0 < ev_to_ebitda < 12:
             reasons.append(f"EV/EBITDA of {ev_to_ebitda:.1f} — reasonable enterprise value")
+        if volume_ratio is not None and volume_ratio > 1.5:
+            reasons.append(f"Volume {volume_ratio:.1f}× average — elevated selling pressure")
+        if obv_trend == "rising":
+            reasons.append("OBV rising — buyers stepping in on dips")
         if analyst_rating is not None and analyst_rating <= 2.5 and analyst_count:
             reasons.append(f"Analyst consensus leans bullish ({analyst_count} analysts, {analyst_rating:.1f}/5)")
 
