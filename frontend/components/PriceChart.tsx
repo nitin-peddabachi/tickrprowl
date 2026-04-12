@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { publicApi } from "@/lib/api";
 import {
   ComposedChart,
   Line,
@@ -53,8 +53,8 @@ export default function PriceChart({ ticker }: Props) {
 
   useEffect(() => {
     setLoading(true);
-    axios
-      .get(`http://localhost:8000/api/stocks/${ticker}/history?period=${period}`)
+    publicApi
+      .get(`/api/stocks/${ticker}/history?period=${period}`)
       .then((res) => setData(res.data))
       .catch(() => setData([]))
       .finally(() => setLoading(false));

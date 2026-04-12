@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import axios from "axios";
 import PriceChart from "@/components/PriceChart";
+import { useApi } from "@/lib/api";
 import StockModal from "@/components/StockModal";
 
 interface Props {
@@ -30,6 +30,7 @@ export default function WatchlistCard({ item, onRemove }: Props) {
   const [editTarget, setEditTarget] = useState(target_price || "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const api = useApi();
 
   const signal = analysis?.signal || "—";
   const signalClass = signalColors[signal] || "text-gray-400 bg-gray-400/10 border-gray-400/30";
@@ -42,7 +43,7 @@ export default function WatchlistCard({ item, onRemove }: Props) {
 
   const saveNotes = async () => {
     setSaving(true);
-    await axios.patch(`http://localhost:8000/api/watchlist/${ticker}`, {
+    await api.patch(`/api/watchlist/${ticker}`, {
       ticker,
       notes: editNotes,
       target_price: targetNum || null,

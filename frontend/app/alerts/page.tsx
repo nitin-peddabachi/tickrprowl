@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
 import StockModal from "@/components/StockModal";
+import { useApi } from "@/lib/api";
 
 const ALERT_TYPES = [
   { value: "rsi_below", label: "RSI drops below", placeholder: "e.g. 30", hint: "Triggers when RSI ≤ threshold" },
@@ -26,11 +26,12 @@ export default function AlertsPage() {
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const api = useApi();
 
   const fetchAll = async () => {
     const [alertsRes, notifRes] = await Promise.all([
-      axios.get("http://localhost:8000/api/alerts/"),
-      axios.get("http://localhost:8000/api/alerts/notifications"),
+      api.get("/api/alerts/"),
+      api.get("/api/alerts/notifications"),
     ]);
     setAlerts(alertsRes.data);
     setNotifications(notifRes.data);
@@ -45,7 +46,7 @@ export default function AlertsPage() {
     setError("");
     setSuccess("");
     try {
-      await axios.post("http://localhost:8000/api/alerts/", {
+      await api.post("/api/alerts/", {
         ticker: ticker.toUpperCase(),
         alert_type: alertType,
         threshold: parseFloat(threshold),
@@ -62,18 +63,18 @@ export default function AlertsPage() {
   };
 
   const toggleAlert = async (id: number) => {
-    await axios.patch(`http://localhost:8000/api/alerts/${id}/toggle`);
+    await api.patch(`/api/alerts/${id}/toggle`);
     fetchAll();
   };
 
   const deleteAlert = async (id: number) => {
-    await axios.delete(`http://localhost:8000/api/alerts/${id}`);
+    await api.delete(`/api/alerts/${id}`);
     fetchAll();
   };
 
   const checkNow = async () => {
     setChecking(true);
-    await axios.post("http://localhost:8000/api/alerts/check-now");
+    await api.post("/api/alerts/check-now");
     await fetchAll();
     setChecking(false);
     setSuccess("Alert check complete!");
@@ -81,7 +82,7 @@ export default function AlertsPage() {
   };
 
   const markAllRead = async () => {
-    await axios.post("http://localhost:8000/api/alerts/notifications/mark-read");
+    await api.post("/api/alerts/notifications/mark-read");
     fetchAll();
   };
 

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from typing import Optional
 from app.models.database import get_db, Alert, Notification
 from app.services.alert_checker import check_alerts
+from app.dependencies.auth import get_current_user
 
 router = APIRouter()
 
@@ -17,8 +17,8 @@ class AlertCreate(BaseModel):
 
 
 @router.get("/")
-def get_alerts(db: Session = Depends(get_db)):
-    alerts = db.query(Alert).order_by(Alert.created_at.desc()).all()
+def get_alerts(db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
+    alerts = db.query(Alert).filter(Alert.user_id == user_id).order_by(Alert.created_at.desc()).all()
     return [
         {
             "id": a.id,
@@ -34,12 +34,13 @@ def get_alerts(db: Session = Depends(get_db)):
 
 
 @router.post("/")
-def create_alert(payload: AlertCreate, db: Session = Depends(get_db)):
+def create_alert(payload: AlertCreate, db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
     if payload.alert_type not in VALID_TYPES:
         raise HTTPException(status_code=400, detail=f"Invalid alert_type. Must be one of: {VALID_TYPES}")
 
     alert = Alert(
         ticker=payload.ticker.upper(),
+        user_id=user_id,
         alert_type=payload.alert_type,
         threshold=payload.threshold,
     )
@@ -50,8 +51,8 @@ def create_alert(payload: AlertCreate, db: Session = Depends(get_db)):
 
 
 @router.patch("/{alert_id}/toggle")
-def toggle_alert(alert_id: int, db: Session = Depends(get_db)):
-    alert = db.query(Alert).filter(Alert.id == alert_id).first()
+def toggle_alert(alert_id: int, db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
+    alert = db.query(Alert).filter(Alert.id == alert_id, Alert.user_id == user_id).first()
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
     alert.is_active = not alert.is_active
@@ -60,8 +61,8 @@ def toggle_alert(alert_id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/{alert_id}")
-def delete_alert(alert_id: int, db: Session = Depends(get_db)):
-    alert = db.query(Alert).filter(Alert.id == alert_id).first()
+def delete_alert(alert_id: int, db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
+    alert = db.query(Alert).filter(Alert.id == alert_id, Alert.user_id == user_id).first()
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
     db.delete(alert)
@@ -72,8 +73,14 @@ def delete_alert(alert_id: int, db: Session = Depends(get_db)):
 # --- Notifications ---
 
 @router.get("/notifications")
-def get_notifications(db: Session = Depends(get_db)):
-    notifications = db.query(Notification).order_by(Notification.triggered_at.desc()).limit(50).all()
+def get_notifications(db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
+    notifications = (
+        db.query(Notification)
+        .filter(Notification.user_id == user_id)
+        .order_by(Notification.triggered_at.desc())
+        .limit(50)
+        .all()
+    )
     return [
         {
             "id": n.id,
@@ -90,14 +97,14 @@ def get_notifications(db: Session = Depends(get_db)):
 
 
 @router.get("/notifications/unread-count")
-def unread_count(db: Session = Depends(get_db)):
-    count = db.query(Notification).filter(Notification.is_read == False).count()
+def unread_count(db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
+    count = db.query(Notification).filter(Notification.user_id == user_id, Notification.is_read == False).count()
     return {"count": count}
 
 
 @router.post("/notifications/mark-read")
-def mark_all_read(db: Session = Depends(get_db)):
-    db.query(Notification).filter(Notification.is_read == False).update({"is_read": True})
+def mark_all_read(db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
+    db.query(Notification).filter(Notification.user_id == user_id, Notification.is_read == False).update({"is_read": True})
     db.commit()
     return {"message": "All notifications marked as read"}
 

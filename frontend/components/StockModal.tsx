@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { publicApi } from "@/lib/api";
 import StockCard from "@/components/StockCard";
 
 interface Props {
@@ -17,8 +17,8 @@ export default function StockModal({ ticker, onClose }: Props) {
     if (!ticker) return;
     setStock(null);
     setLoading(true);
-    axios
-      .get(`http://localhost:8000/api/stocks/${ticker.toUpperCase()}`)
+    publicApi
+      .get(`/api/stocks/${ticker.toUpperCase()}`)
       .then((res) => setStock(res.data))
       .finally(() => setLoading(false));
   }, [ticker]);

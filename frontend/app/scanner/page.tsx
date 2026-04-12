@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import axios from "axios";
+import { publicApi } from "@/lib/api";
 import ScannerTable from "@/components/ScannerTable";
 
 const PRESETS = [
@@ -27,7 +27,7 @@ export default function ScannerPage() {
     setProgress("Fetching data...");
     setResults([]);
     try {
-      const res = await axios.get(`http://localhost:8000/api/stocks/batch/preset/${presetKey}`);
+      const res = await publicApi.get(`/api/stocks/batch/preset/${presetKey}`);
       setResults(res.data);
       setHasScanned(true);
       setScannedCount(0);
@@ -53,7 +53,7 @@ export default function ScannerPage() {
     setProgress("Fetching data...");
     setResults([]);
     try {
-      const res = await axios.get(`http://localhost:8000/api/stocks/batch/scan?tickers=${encodeURIComponent(customTickers)}`);
+      const res = await publicApi.get(`/api/stocks/batch/scan?tickers=${encodeURIComponent(customTickers)}`);
       setResults(res.data);
       setHasScanned(true);
       setScannedCount(tickerList.length);
