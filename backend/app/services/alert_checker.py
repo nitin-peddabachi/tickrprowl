@@ -1,6 +1,29 @@
+import os
 from datetime import datetime, timedelta
+
+import httpx
+from dotenv import load_dotenv
+
 from app.models.database import SessionLocal, Alert, Notification
 from app.services.stock_analyzer import get_stock_analysis
+
+load_dotenv()
+
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+
+
+def send_telegram(message: str) -> None:
+    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
+        return
+    try:
+        httpx.post(
+            f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
+            json={"chat_id": TELEGRAM_CHAT_ID, "text": message},
+            timeout=5,
+        )
+    except Exception as e:
+        print(f"Telegram send failed: {e}")
 
 ALERT_TYPE_LABELS = {
     "rsi_below": "RSI Below",
@@ -73,6 +96,7 @@ def check_alerts():
                 db.add(notification)
                 alert.last_triggered = now
                 print(f"  ALERT: {message}")
+                send_telegram(f"🔔 Stockr Alert\n{message}")
 
         db.commit()
     except Exception as e:
