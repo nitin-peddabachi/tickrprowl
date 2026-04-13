@@ -4,26 +4,29 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { UserButton, SignInButton, Show, useAuth } from "@clerk/nextjs";
-import { useApi } from "@/lib/api";
+import { API_URL } from "@/lib/api";
 
 export default function Navbar() {
   const pathname = usePathname();
   const [unread, setUnread] = useState(0);
-  const { isSignedIn } = useAuth();
-  const api = useApi();
+  const { isSignedIn, getToken } = useAuth();
 
   useEffect(() => {
     if (!isSignedIn) return;
-    const fetchUnread = () => {
-      api
-        .get("/api/alerts/notifications/unread-count")
-        .then((res) => setUnread(res.data.count))
-        .catch(() => {});
+    const fetchUnread = async () => {
+      try {
+        const token = await getToken();
+        const res = await fetch(`${API_URL}/api/alerts/notifications/unread-count`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        const data = await res.json();
+        setUnread(data.count);
+      } catch {}
     };
     fetchUnread();
     const interval = setInterval(fetchUnread, 60000);
     return () => clearInterval(interval);
-  }, [isSignedIn, api]);
+  }, [isSignedIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const links = [
     { href: "/", label: "Search" },
