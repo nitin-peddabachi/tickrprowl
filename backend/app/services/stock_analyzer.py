@@ -486,6 +486,10 @@ def get_stock_analysis(ticker: str) -> dict:
     roe = info.get("returnOnEquity")
     roa = info.get("returnOnAssets")
     dividend_yield = info.get("dividendYield")
+    # yfinance returns dividendYield inconsistently — decimal (0.034) for some tickers,
+    # percentage (3.4) for others. Normalize to always be a decimal.
+    if dividend_yield is not None and dividend_yield > 1:
+        dividend_yield = dividend_yield / 100
     beta = info.get("beta")
     short_percent_of_float = info.get("shortPercentOfFloat")  # e.g. 0.05 = 5%
     company_name = info.get("longName", ticker)
