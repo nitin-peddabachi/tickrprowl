@@ -7,7 +7,7 @@ from app.routers import watchlist
 from app.routers import alerts
 from app.routers import portfolio
 from app.models.database import init_db
-from app.services.alert_checker import check_alerts
+from app.services.alert_checker import check_alerts, check_watchlist_auto_alerts
 
 app = FastAPI(title="TickrProwl API", version="1.0.0")
 
@@ -31,6 +31,7 @@ app.include_router(portfolio.router, prefix="/api/portfolio", tags=["portfolio"]
 # Note: score_snapshot job is disabled until the app is deployed
 scheduler = BackgroundScheduler()
 scheduler.add_job(check_alerts, "interval", minutes=30, id="alert_check")
+scheduler.add_job(check_watchlist_auto_alerts, "interval", minutes=30, id="watchlist_auto_alerts")
 scheduler.start()
 
 

@@ -7,7 +7,7 @@ from app.dependencies.auth import get_current_user
 
 router = APIRouter()
 
-VALID_TYPES = {"rsi_below", "price_below", "score_above"}
+VALID_TYPES = {"rsi_below", "price_below", "score_above", "near_52w_low", "rsi_divergence", "absolute_steal"}
 
 
 class AlertCreate(BaseModel):
@@ -110,7 +110,7 @@ def mark_all_read(db: Session = Depends(get_db), user_id: str = Depends(get_curr
 
 
 @router.post("/check-now")
-def run_check_now():
-    """Manually trigger an alert check — useful for testing."""
-    check_alerts()
+def run_check_now(user_id: str = Depends(get_current_user)):
+    """Manually trigger an alert check scoped to the current user."""
+    check_alerts(user_id=user_id)
     return {"message": "Alert check complete"}

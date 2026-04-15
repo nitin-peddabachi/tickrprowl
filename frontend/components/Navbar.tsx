@@ -11,6 +11,8 @@ export default function Navbar() {
   const [unread, setUnread] = useState(0);
   const { isSignedIn, getToken } = useAuth();
 
+  if (pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) return null;
+
   useEffect(() => {
     if (!isSignedIn) return;
     const fetchUnread = async () => {

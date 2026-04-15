@@ -64,4 +64,4 @@ echo ""
 echo "Run ./stop.sh to shut down."
 
 # Open in browser
-open http://localhost:3000
+open -a "Google Chrome" http://localhost:3000

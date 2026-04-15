@@ -182,6 +182,50 @@ def _calculate_piotroski_fscore(stock: yf.Ticker) -> dict:
         return {"score": None, "components": {}, "interpretation": None}
 
 
+def _detect_rsi_divergence(close: pd.Series) -> dict:
+    """
+    Detect bullish RSI divergence: price makes a lower low, but RSI makes a higher low.
+    Compares two 15-bar windows within the last 30 bars.
+    Returns detected bool and a human-readable description.
+    """
+    try:
+        if len(close) < 35:
+            return {"detected": False, "description": None}
+
+        rsi_series = ta.momentum.RSIIndicator(close, window=14).rsi()
+
+        recent_close = close.iloc[-15:]
+        prior_close = close.iloc[-30:-15]
+        recent_rsi = rsi_series.iloc[-15:]
+        prior_rsi = rsi_series.iloc[-30:-15]
+
+        recent_low_idx = recent_close.idxmin()
+        prior_low_idx = prior_close.idxmin()
+
+        recent_price_low = float(recent_close[recent_low_idx])
+        prior_price_low = float(prior_close[prior_low_idx])
+        recent_rsi_at_low = float(recent_rsi[recent_low_idx])
+        prior_rsi_at_low = float(prior_rsi[prior_low_idx])
+
+        if pd.isna(recent_rsi_at_low) or pd.isna(prior_rsi_at_low):
+            return {"detected": False, "description": None}
+
+        if recent_price_low < prior_price_low and recent_rsi_at_low > prior_rsi_at_low:
+            return {
+                "detected": True,
+                "description": (
+                    f"Price made lower low (${recent_price_low:.2f} vs ${prior_price_low:.2f}) "
+                    f"but RSI made higher low ({recent_rsi_at_low:.1f} vs {prior_rsi_at_low:.1f}) — "
+                    "selling momentum is exhausting"
+                ),
+            }
+
+        return {"detected": False, "description": None}
+    except Exception as e:
+        print(f"RSI divergence detection error: {e}")
+        return {"detected": False, "description": None}
+
+
 def _calculate_fcf_yield(stock: yf.Ticker, market_cap) -> float:
     """FCF / Market Cap as a percentage. >5% = good, >8% = strong."""
     try:
@@ -419,7 +463,7 @@ def get_stock_analysis(ticker: str) -> dict:
     # True 52-week high/low from Yahoo Finance (not derived from our fetch window)
     price_52w_high = info.get("fiftyTwoWeekHigh") or round(hist["High"].max(), 2)
     price_52w_low = info.get("fiftyTwoWeekLow") or round(hist["Low"].min(), 2)
-    pct_from_high = round((current_price - price_52w_high) / price_52w_high * 100, 2) if price_52w_high else 0
+    pct_from_high = round((current_price - price_52w_high) / price_52w_high * 100, 2) if price_52w_high else None
 
     price_change_pct = info.get("regularMarketChangePercent")
     price_change = info.get("regularMarketChange")
@@ -545,6 +589,8 @@ def get_stock_analysis(ticker: str) -> dict:
     signal = signal_result["signal"]
     signal_reasons = signal_result["signal_reasons"]
 
+    rsi_divergence = _detect_rsi_divergence(close)
+
     absolute_steal = _check_absolute_steal(
         rsi=rsi,
         oversold_score=oversold_score,
@@ -620,6 +666,7 @@ def get_stock_analysis(ticker: str) -> dict:
         "signal": signal,
         "signal_reasons": signal_reasons,
         "next_earnings_date": next_earnings_date,
+        "rsi_divergence": rsi_divergence,
         "is_absolute_steal": absolute_steal["is_absolute_steal"],
         "steal_conditions": absolute_steal["conditions"],
         "is_overbought": overbought["is_overbought"],
@@ -664,12 +711,13 @@ def _calculate_oversold_score(
         score += 10
 
     # Distance from 52-week high (max 20 pts)
-    if pct_from_high < -40:
-        score += 20
-    elif pct_from_high < -25:
-        score += 12
-    elif pct_from_high < -15:
-        score += 5
+    if pct_from_high is not None:
+        if pct_from_high < -40:
+            score += 20
+        elif pct_from_high < -25:
+            score += 12
+        elif pct_from_high < -15:
+            score += 5
 
     # SMA signals — price below moving average = bearish pressure / more oversold
     if sma_50 is not None and current_price < sma_50:
@@ -741,30 +789,32 @@ def _calculate_oversold_score(
 
 def _check_absolute_steal(rsi, oversold_score, pe_ratio, revenue_growth, debt_to_equity, current_price, dcf_value, piotroski_score) -> dict:
     conditions = {
-        "rsi_oversold": bool(rsi < 30),
+        "rsi_oversold": bool(rsi < 30) if rsi is not None else None,
         "strong_signal": bool(oversold_score >= 70),
-        "cheap_valuation": bool(pe_ratio is not None and pe_ratio < 15),
-        "growing_revenue": bool(revenue_growth is not None and revenue_growth > 0),
+        "cheap_valuation": bool(pe_ratio < 15) if pe_ratio is not None else None,
+        "growing_revenue": bool(revenue_growth > 0) if revenue_growth is not None else None,
         "low_leverage": bool(debt_to_equity is None or debt_to_equity < 200),
-        "dcf_undervalued": bool(dcf_value is not None and current_price < dcf_value * 0.8),
-        "financially_healthy": bool(piotroski_score is not None and piotroski_score >= 7),
+        "dcf_undervalued": bool(current_price < dcf_value * 0.8) if dcf_value is not None else None,
+        "financially_healthy": bool(piotroski_score >= 7) if piotroski_score is not None else None,
     }
+    known = [v for v in conditions.values() if v is not None]
     return {
-        "is_absolute_steal": bool(all(conditions.values())),
+        "is_absolute_steal": bool(len(known) >= 4 and all(known)),
         "conditions": conditions,
     }
 
 
 def _check_overbought(rsi, bb_percent, pct_from_low, pe_ratio, stoch_k) -> dict:
     conditions = {
-        "rsi_high": bool(rsi > 70),
-        "stoch_overbought": bool(stoch_k > 80),
-        "near_upper_band": bool(bb_percent > 0.9),
-        "far_from_low": bool(pct_from_low > 25),
-        "high_valuation": bool(pe_ratio is not None and pe_ratio > 35),
+        "rsi_high": bool(rsi > 70) if rsi is not None else None,
+        "stoch_overbought": bool(stoch_k > 80) if stoch_k is not None else None,
+        "near_upper_band": bool(bb_percent > 0.9) if bb_percent is not None else None,
+        "far_from_low": bool(pct_from_low > 25) if pct_from_low is not None else None,
+        "high_valuation": bool(pe_ratio > 35) if pe_ratio is not None else None,
     }
+    known = [v for v in conditions.values() if v is not None]
     return {
-        "is_overbought": bool(all(conditions.values())),
+        "is_overbought": bool(len(known) >= 3 and all(known)),
         "conditions": conditions,
     }
 

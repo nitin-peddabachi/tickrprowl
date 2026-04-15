@@ -42,6 +42,19 @@ export default function AlertsPage() {
   const createAlert = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ticker || !threshold) return;
+    const thresholdNum = parseFloat(threshold);
+    if (alertType === "rsi_below" && (thresholdNum <= 0 || thresholdNum > 100)) {
+      setError("RSI threshold must be between 1 and 100");
+      return;
+    }
+    if (alertType === "score_above" && (thresholdNum <= 0 || thresholdNum > 100)) {
+      setError("Score threshold must be between 1 and 100");
+      return;
+    }
+    if (alertType === "price_below" && thresholdNum <= 0) {
+      setError("Price threshold must be a positive number");
+      return;
+    }
     setCreating(true);
     setError("");
     setSuccess("");
@@ -228,7 +241,7 @@ export default function AlertsPage() {
           </div>
 
           {notifications.length === 0 ? (
-            <p className="text-gray-600 text-sm">No notifications yet. Alerts check every 30 minutes.</p>
+            <p className="text-gray-600 text-sm">No notifications yet. Alerts check automatically in the background.</p>
           ) : (
             <div className="space-y-2">
               {notifications.map((n) => (
@@ -244,7 +257,7 @@ export default function AlertsPage() {
                   <div className="flex-1">
                     <p className="text-white text-sm">
                       <span onClick={() => setSelectedTicker(n.ticker)} className="font-bold hover:text-emerald-400 cursor-pointer transition-colors">{n.ticker}</span>
-                      {n.message.replace(n.ticker, "")}
+                      {(n.message ?? "").replace(n.ticker, "")}
                     </p>
                     <p className="text-gray-600 text-xs mt-1">{n.triggered_at?.slice(0, 16).replace("T", " ")}</p>
                   </div>

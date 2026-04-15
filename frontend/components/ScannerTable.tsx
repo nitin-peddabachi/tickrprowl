@@ -84,9 +84,9 @@ export default function ScannerTable({ stocks }: Props) {
 
   const getValue = (stock: any, key: SortKey) => {
     if (key === "oversold_score") return stock.oversold_score;
-    if (key === "rsi") return stock.technicals.rsi;
-    if (key === "pct_from_52w_high") return stock.pct_from_52w_high;
-    if (key === "pe_ratio") return stock.fundamentals.pe_ratio ?? 9999;
+    if (key === "rsi") return stock.technicals?.rsi ?? 0;
+    if (key === "pct_from_52w_high") return stock.pct_from_52w_high ?? 0;
+    if (key === "pe_ratio") return stock.fundamentals?.pe_ratio ?? 9999;
     return 0;
   };
 
@@ -220,15 +220,15 @@ export default function ScannerTable({ stocks }: Props) {
                   )}
                 </td>
                 <td className={`px-4 py-3 font-mono font-medium ${
-                  stock.technicals.rsi < 30 ? "text-emerald-400" :
-                  stock.technicals.rsi > 70 ? "text-red-400" : "text-white"
+                  (stock.technicals?.rsi ?? 50) < 30 ? "text-emerald-400" :
+                  (stock.technicals?.rsi ?? 50) > 70 ? "text-red-400" : "text-white"
                 }`}>
-                  {fmt(stock.technicals.rsi)}
+                  {fmt(stock.technicals?.rsi)}
                 </td>
                 <td className={`px-4 py-3 font-mono font-medium ${stock.pct_from_52w_high < -20 ? "text-emerald-400" : "text-white"}`}>
                   {fmt(stock.pct_from_52w_high)}%
                 </td>
-                <td className="px-4 py-3 text-white font-mono">{fmt(stock.fundamentals.pe_ratio)}</td>
+                <td className="px-4 py-3 text-white font-mono">{fmt(stock.fundamentals?.pe_ratio)}</td>
                 <td className={`px-4 py-3 font-mono font-medium ${
                   (stock.fundamentals.revenue_growth ?? 0) > 0 ? "text-emerald-400" : "text-red-400"
                 }`}>

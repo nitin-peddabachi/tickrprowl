@@ -406,8 +406,8 @@ export default function StockCard({ stock }: Props) {
               />
               <MetricRow
                 label="Dividend Yield"
-                value={stock.fundamentals.dividend_yield != null ? `${num(stock.fundamentals.dividend_yield)}%` : "N/A"}
-                color={stock.fundamentals.dividend_yield > 3 ? "text-emerald-400" : "text-white"}
+                value={fmtPct(stock.fundamentals.dividend_yield)}
+                color={stock.fundamentals.dividend_yield > 0.03 ? "text-emerald-400" : "text-white"}
               />
               <MetricRow
                 label="Beta"
@@ -437,7 +437,7 @@ export default function StockCard({ stock }: Props) {
               />
               <MetricRow
                 label="Earnings Growth"
-                value={stock.fundamentals.earnings_growth != null ? `${(stock.fundamentals.earnings_growth * 100).toFixed(1)}%` : "N/A"}
+                value={stock.fundamentals.earnings_growth != null ? (Math.abs(stock.fundamentals.earnings_growth * 100) > 1000 ? "N/M" : `${(stock.fundamentals.earnings_growth * 100).toFixed(1)}%`) : "N/A"}
                 color={(stock.fundamentals.earnings_growth ?? 0) > 0 ? "text-emerald-400" : "text-red-400"}
               />
               <MetricRow

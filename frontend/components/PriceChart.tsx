@@ -37,7 +37,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       {d?.bb_upper && (
         <p className="text-purple-400">BB: ${d?.bb_lower} – ${d?.bb_upper}</p>
       )}
-      {d?.rsi !== null && (
+      {d?.rsi != null && (
         <p className={d?.rsi < 30 ? "text-emerald-400" : d?.rsi > 70 ? "text-red-400" : "text-gray-300"}>
           RSI: {d?.rsi}
         </p>
@@ -61,8 +61,8 @@ export default function PriceChart({ ticker }: Props) {
   }, [ticker, period]);
 
   const prices = data.map((d) => d.close).filter(Boolean);
-  const minPrice = Math.min(...prices) * 0.98;
-  const maxPrice = Math.max(...prices) * 1.02;
+  const minPrice = prices.length > 0 ? Math.min(...prices) * 0.98 : 0;
+  const maxPrice = prices.length > 0 ? Math.max(...prices) * 1.02 : 100;
 
   const rsiData = data.filter((d) => d.rsi !== null);
   const firstClose = data[0]?.close;
@@ -113,7 +113,7 @@ export default function PriceChart({ ticker }: Props) {
                 dataKey="date"
                 tick={{ fill: "#6b7280", fontSize: 10 }}
                 tickFormatter={(v) => v.slice(5)}
-                interval={Math.floor(data.length / 6)}
+                interval={Math.max(1, Math.floor(data.length / 6))}
               />
               <YAxis
                 domain={[minPrice, maxPrice]}
