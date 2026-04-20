@@ -274,6 +274,23 @@ export default function StockCard({ stock }: Props) {
           </div>
         )}
 
+        {/* Quick Stats Strip */}
+        <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {[
+            { label: "Market Cap", value: fmtMarketCap(stock.market_cap) },
+            { label: "P/E Ratio",  value: stock.fundamentals?.pe_ratio != null ? num(stock.fundamentals.pe_ratio) : "N/A" },
+            { label: "Beta",       value: stock.fundamentals?.beta != null ? num(stock.fundamentals.beta) : "N/A" },
+            { label: "52w Range",  value: stock.price_52w_low != null && stock.price_52w_high != null
+                ? `$${num(stock.price_52w_low)}–$${num(stock.price_52w_high)}`
+                : "N/A" },
+          ].map(({ label, value }) => (
+            <div key={label} className="rounded-lg bg-gray-800/40 border border-gray-800 px-3 py-2">
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">{label}</p>
+              <p className="text-xs font-mono font-semibold text-white truncate">{value}</p>
+            </div>
+          ))}
+        </div>
+
         {/* Tabs */}
         <div className="border-b border-gray-800 mb-4">
           <div className="flex gap-0">
