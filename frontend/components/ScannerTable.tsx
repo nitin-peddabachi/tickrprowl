@@ -204,7 +204,12 @@ export default function ScannerTable({ stocks }: Props) {
           </thead>
           <tbody className="divide-y divide-gray-800">
             {sorted.map((stock, i) => (
-              <tr key={stock.ticker} onClick={() => setSelectedTicker(stock.ticker)} className="bg-gray-950 hover:bg-gray-900 transition-colors cursor-pointer">
+              <tr
+                key={stock.ticker}
+                onClick={() => setSelectedTicker(stock.ticker)}
+                className="bg-gray-950 hover:bg-gray-900 transition-colors cursor-pointer animate-fade-in"
+                style={{ animationDelay: `${Math.min(i * 30, 500)}ms` }}
+              >
                 <td className="px-4 py-3 text-gray-600">{i + 1}</td>
                 <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
                   {(() => {

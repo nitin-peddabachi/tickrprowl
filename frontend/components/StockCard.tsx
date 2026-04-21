@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useApi } from "@/lib/api";
 import PriceChart from "@/components/PriceChart";
@@ -41,13 +41,35 @@ function fmtPct(val: number | null | undefined) {
   return `${(val * 100).toFixed(1)}%`;
 }
 
+function useCountUp(target: number, duration = 900) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    let frame = 0;
+    const totalFrames = Math.round(duration / 16);
+    const timer = setInterval(() => {
+      frame++;
+      // ease-out curve: fast start, slow finish
+      const progress = 1 - Math.pow(1 - frame / totalFrames, 3);
+      setCount(Math.min(Math.round(target * progress), target));
+      if (frame >= totalFrames) clearInterval(timer);
+    }, 16);
+    return () => clearInterval(timer);
+  }, [target, duration]);
+  return count;
+}
+
 function ScoreBar({ score }: { score: number }) {
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setWidth(score), 60);
+    return () => clearTimeout(t);
+  }, [score]);
   return (
     <div className="relative h-2.5 bg-gray-800 rounded-full overflow-hidden">
       <div
-        className="absolute inset-y-0 left-0 rounded-full transition-all duration-700"
+        className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-1000 ease-out"
         style={{
-          width: `${score}%`,
+          width: `${width}%`,
           background: "linear-gradient(to right, #ef4444, #f97316, #f59e0b, #84cc16, #10b981)",
           backgroundSize: "500px 100%",
         }}
@@ -144,6 +166,7 @@ type Tab = "technicals" | "fundamentals" | "analysis" | "insider";
 
 export default function StockCard({ stock }: Props) {
   const [watchlistStatus, setWatchlistStatus] = useState<"idle" | "adding" | "added" | "error">("idle");
+  const animatedScore = useCountUp(stock.oversold_score);
   const [activeTab, setActiveTab] = useState<Tab>("technicals");
   const api = useApi();
 
@@ -293,7 +316,7 @@ export default function StockCard({ stock }: Props) {
         <div className="mb-4">
           <div className="flex justify-between text-sm mb-1.5">
             <span className="text-gray-400 font-medium cursor-help" title="Composite score (0–100) based on RSI, Bollinger Bands, distance from 52-week high, P/E, revenue growth, DCF undervaluation, FCF yield, and other factors. 70+ = Strong Buy, 50+ = Buy, 30+ = Watch.">Oversold Score</span>
-            <span className="font-mono font-bold text-white">{stock.oversold_score}<span className="text-gray-600">/100</span></span>
+            <span className="font-mono font-bold text-white">{animatedScore}<span className="text-gray-600">/100</span></span>
           </div>
           <ScoreBar score={stock.oversold_score} />
         </div>
