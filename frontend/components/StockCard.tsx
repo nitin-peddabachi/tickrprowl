@@ -376,8 +376,24 @@ export default function StockCard({ stock }: Props) {
                 )}
                 <MetricRow label="52w High" value={`$${num(stock.price_52w_high)}`} />
                 <MetricRow label="52w Low"  value={`$${num(stock.price_52w_low)}`} />
+                <MetricRow
+                  label="RSI Divergence"
+                  value={
+                    stock.rsi_divergence?.detected
+                      ? <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-400/10 text-emerald-400">✓ Bullish</span>
+                      : <span className="text-gray-600 text-[10px]">None</span>
+                  }
+                />
               </div>
             </div>
+
+            {stock.rsi_divergence?.detected && stock.rsi_divergence?.description && (
+              <div className="mb-4 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2.5 flex items-start gap-2">
+                <span className="text-emerald-400 text-xs mt-0.5 shrink-0">↗</span>
+                <p className="text-xs text-emerald-300">{stock.rsi_divergence.description}</p>
+              </div>
+            )}
+
             <PriceChart ticker={stock.ticker} />
           </div>
         )}

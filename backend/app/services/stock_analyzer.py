@@ -539,6 +539,9 @@ def get_stock_analysis(ticker: str) -> dict:
     except Exception:
         pass
 
+    # RSI divergence — must be computed before oversold score and signal
+    rsi_divergence = _detect_rsi_divergence(close)
+
     # Oversold score (0-100, higher = more oversold)
     oversold_score = _calculate_oversold_score(
         rsi=rsi,
@@ -559,6 +562,7 @@ def get_stock_analysis(ticker: str) -> dict:
         sma_50=sma_50,
         sma_200=sma_200,
         volume_ratio=volume_ratio,
+        rsi_divergence_detected=rsi_divergence["detected"],
     )
 
     pct_from_low = round((current_price - price_52w_low) / price_52w_low * 100, 2) if price_52w_low else 0
@@ -589,11 +593,10 @@ def get_stock_analysis(ticker: str) -> dict:
         volume_ratio=volume_ratio,
         obv_trend=obv_trend,
         short_percent_of_float=short_percent_of_float,
+        rsi_divergence=rsi_divergence,
     )
     signal = signal_result["signal"]
     signal_reasons = signal_result["signal_reasons"]
-
-    rsi_divergence = _detect_rsi_divergence(close)
 
     absolute_steal = _check_absolute_steal(
         rsi=rsi,
@@ -687,6 +690,7 @@ def _calculate_oversold_score(
     debt_to_equity, revenue_growth, macd_line, signal_line,
     current_price, dcf_value, stoch_k, ev_to_ebitda, fcf_yield,
     piotroski_score, sma_50=None, sma_200=None, volume_ratio=None,
+    rsi_divergence_detected=False,
 ) -> int:
     score = 0
 
@@ -771,6 +775,10 @@ def _calculate_oversold_score(
     if macd_line is not None and signal_line is not None and macd_line > signal_line:
         score += 5
 
+    # RSI bullish divergence (+8 pts) — selling momentum exhausting while price still falling
+    if rsi_divergence_detected and rsi < 45:
+        score += 8
+
     # Piotroski F-Score adjustment
     if piotroski_score is not None:
         if piotroski_score >= 7:
@@ -831,6 +839,7 @@ def _get_signal(
     golden_cross=None, sma_50=None, sma_200=None,
     analyst_rating=None, analyst_count=None, target_price_mean=None,
     volume_ratio=None, obv_trend=None, short_percent_of_float=None,
+    rsi_divergence=None,
 ) -> dict:
     reasons = []
 
@@ -842,7 +851,8 @@ def _get_signal(
         pct_from_high is not None and pct_from_high > -5,
     ]
     overbought_count = sum(overbought_flags)
-    all_overbought = all(overbought_flags)
+    # Strong Sell requires 4 of 5 flags — not all(), so stocks without a P/E can still trigger
+    all_overbought = overbought_count >= 4
 
     if all_overbought:
         signal = "Strong Sell"
@@ -917,6 +927,8 @@ def _get_signal(
         if target_price_mean and current_price < target_price_mean:
             upside = (target_price_mean - current_price) / current_price * 100
             reasons.append(f"Analyst mean target ${target_price_mean:.2f} — {upside:.0f}% upside")
+        if rsi_divergence and rsi_divergence.get("detected") and rsi_divergence.get("description"):
+            reasons.append(rsi_divergence["description"])
 
     elif oversold_score >= 50:
         signal = "Buy"
@@ -947,6 +959,8 @@ def _get_signal(
             reasons.append("OBV rising — buyers stepping in on dips")
         if analyst_rating is not None and analyst_rating <= 2.5 and analyst_count:
             reasons.append(f"Analyst consensus leans bullish ({analyst_count} analysts, {analyst_rating:.1f}/5)")
+        if rsi_divergence and rsi_divergence.get("detected") and rsi_divergence.get("description"):
+            reasons.append(rsi_divergence["description"])
 
     elif oversold_score >= 30:
         signal = "Watch"
