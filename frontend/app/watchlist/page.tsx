@@ -68,12 +68,17 @@ export default function WatchlistPage() {
   const steals = items.filter((i) => i.analysis?.is_absolute_steal).length;
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white p-8">
+    <main className="min-h-screen text-white p-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-start justify-between mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-emerald-400 mb-1">Watchlist</h1>
-            <p className="text-gray-400">Your saved stocks with live analysis</p>
+          <div className="relative">
+            <div className="absolute -top-6 -left-4 w-72 h-28 bg-emerald-500/8 rounded-full blur-3xl pointer-events-none" />
+            <div className="relative">
+              <h1 className="text-4xl font-extrabold mb-1 tracking-tight bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+                Watchlist
+              </h1>
+              <p className="text-gray-400">Your saved stocks with live analysis</p>
+            </div>
           </div>
           <div className="flex flex-col items-end gap-2 mt-2">
             <div className="flex gap-2">

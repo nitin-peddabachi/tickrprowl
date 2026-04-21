@@ -295,16 +295,21 @@ export default function PortfolioPage() {
   );
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white p-8">
+    <main className="min-h-screen text-white p-8">
       <div className="max-w-7xl mx-auto">
 
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-1">Portfolio</h1>
-            <p className="text-gray-500 text-sm">
-              Consolidated across all brokers · live analysis overlaid
-            </p>
+          <div className="relative">
+            <div className="absolute -top-6 -left-4 w-72 h-28 bg-emerald-500/8 rounded-full blur-3xl pointer-events-none" />
+            <div className="relative">
+              <h1 className="text-4xl font-extrabold mb-1 tracking-tight bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+                Portfolio
+              </h1>
+              <p className="text-gray-500 text-sm">
+                Consolidated across all brokers · live analysis overlaid
+              </p>
+            </div>
           </div>
           <div className="flex flex-col items-end gap-2">
             <div className="flex gap-2">

@@ -20,7 +20,9 @@
 }
 
 body {
-  background: var(--background);
+  background-color: #030712;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 24px 24px;
   color: var(--foreground);
 }
 

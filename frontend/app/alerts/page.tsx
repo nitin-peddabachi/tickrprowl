@@ -104,11 +104,16 @@ export default function AlertsPage() {
   const selectedType = ALERT_TYPES.find((t) => t.value === alertType);
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white p-8">
+    <main className="min-h-screen text-white p-8">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-emerald-400 mb-1">Alerts</h1>
-          <p className="text-gray-400">Get notified when stocks hit your conditions</p>
+        <div className="relative mb-8">
+          <div className="absolute -top-6 left-0 w-72 h-28 bg-emerald-500/8 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative">
+            <h1 className="text-4xl font-extrabold mb-1 tracking-tight bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+              Alerts
+            </h1>
+            <p className="text-gray-400">Get notified when stocks hit your conditions</p>
+          </div>
         </div>
 
         {/* Create Alert */}
