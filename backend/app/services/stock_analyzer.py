@@ -18,8 +18,8 @@ def calculate_dcf_value(stock: yf.Ticker, growth_rate: float = None, discount_ra
             if "Operating Cash Flow" in cashflow.index and "Capital Expenditures" in cashflow.index:
                 cfo = cashflow.loc["Operating Cash Flow"]
                 capex = cashflow.loc["Capital Expenditures"]
-                fcf_series = cfo - capex
-                fcf_series = fcf_series.dropna()
+                # yfinance reports CapEx as negative; add (not subtract) to avoid double-negation
+                fcf_series = (cfo + capex).dropna()
             else:
                 return None
 
@@ -60,13 +60,24 @@ def calculate_dcf_value(stock: yf.Ticker, growth_rate: float = None, discount_ra
         terminal_value = terminal_fcf / (discount_rate - terminal_growth)
         pv_terminal = terminal_value / (1 + discount_rate) ** projection_years
 
-        total_value = pv_fcf + pv_terminal
+        enterprise_value = pv_fcf + pv_terminal
 
         info = stock.info
         shares_outstanding = info.get("sharesOutstanding")
-        if shares_outstanding:
-            dcf_per_share = total_value / shares_outstanding
-            return round(dcf_per_share, 2)
+        if not shares_outstanding:
+            return None
+
+        # Subtract net debt to convert enterprise value → equity value
+        total_debt = info.get("totalDebt") or 0
+        cash = info.get("totalCash") or 0
+        net_debt = total_debt - cash
+        equity_value = enterprise_value - net_debt
+
+        if equity_value <= 0:
+            return None
+
+        dcf_per_share = equity_value / shares_outstanding
+        return round(dcf_per_share, 2)
 
     except Exception as e:
         print(f"DCF calculation error: {e}")
