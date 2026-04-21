@@ -56,10 +56,55 @@ function ScoreBar({ score }: { score: number }) {
   );
 }
 
-function MetricRow({ label, value, color = "text-white" }: { label: string; value: React.ReactNode; color?: string }) {
+const TOOLTIPS: Record<string, string> = {
+  // Technicals
+  "RSI (14)":       "Relative Strength Index (14-day). Momentum oscillator on a 0–100 scale. Below 30 = oversold (potential buy signal), above 70 = overbought (potential sell signal).",
+  "MACD":           "Moving Average Convergence Divergence. Difference between the 12-day and 26-day EMAs. Positive and above the signal line = bullish momentum.",
+  "BB %":           "Bollinger Band %B — where price sits within the upper/lower bands. Below 0.1 = near lower band (oversold), above 0.9 = near upper band (overbought).",
+  "Stoch %K":       "Stochastic Oscillator %K. Compares the close price to the recent high-low range. Below 20 = oversold, above 80 = overbought.",
+  "Stoch %D":       "3-period moving average of %K. A %K crossover above %D is a bullish signal; crossing below is bearish.",
+  "SMA 50":         "50-day Simple Moving Average. Price trading below the SMA 50 suggests a short-term downtrend.",
+  "SMA 200":        "200-day Simple Moving Average. Price below the SMA 200 signals a long-term downtrend — a key bear market indicator.",
+  "MA Cross":       "Moving average crossover. Golden Cross (SMA 50 > SMA 200) = long-term bullish. Death Cross (SMA 50 < SMA 200) = long-term bearish.",
+  "Volume Ratio":   "Today's volume divided by the 20-day average volume. Above 1.5× = elevated interest; above 2× = unusually high activity, may signal a breakout or reversal.",
+  "OBV Trend":      "On-Balance Volume trend. Rising OBV means volume is flowing into the stock (accumulation). Falling OBV signals distribution (selling pressure).",
+  "RSI Divergence": "Bullish divergence: price makes a lower low but RSI makes a higher low. Signals weakening selling pressure and a potential reversal upward.",
+  // Fundamentals
+  "P/E Ratio":      "Price-to-Earnings (trailing). Share price divided by the last 12 months of EPS. Below 15 = historically cheap; above 25 = expensive.",
+  "Forward P/E":    "Price divided by next 12 months of estimated EPS. Lower than trailing P/E implies analysts expect earnings growth.",
+  "PEG Ratio":      "P/E divided by the earnings growth rate. Below 1 = potentially undervalued relative to growth. Above 2 = expensive for the growth on offer.",
+  "P/B Ratio":      "Price-to-Book. Share price divided by net book value per share. Below 1 = trading below the liquidation value of assets.",
+  "P/S Ratio":      "Price-to-Sales. Market cap divided by annual revenue. Below 2 = generally cheap; high P/S requires strong growth to justify.",
+  "ROE":            "Return on Equity. Net income as a % of shareholder equity. Above 15% indicates strong management efficiency.",
+  "ROA":            "Return on Assets. Net income as a % of total assets. Above 5% shows the company uses its assets efficiently to generate profit.",
+  "Dividend Yield": "Annual dividend per share ÷ share price. Above 3% = meaningful income. Unusually high yields can signal a dividend at risk of being cut.",
+  "Beta":           "Sensitivity to market moves. Beta > 1 = more volatile than the market; Beta < 1 = more stable. Negative Beta = moves inversely to the market.",
+  "Short Interest":  "% of float sold short. Above 10% = elevated bearish sentiment. Above 20% = potential short squeeze if positive news drives a rapid rally.",
+  "Debt / Equity":  "Total debt as a % of shareholder equity. High D/E means heavy financial leverage — magnifies gains but also losses and bankruptcy risk.",
+  "Revenue Growth": "Year-over-year change in revenue. Confirms the business is expanding even if earnings are temporarily depressed.",
+  "Earnings Growth":"Year-over-year change in EPS. Extreme values (shown as N/M) usually indicate one-time charges that distort the comparison.",
+  "Profit Margin":  "Net income as a % of revenue. Above 10% = healthy. Declining margins signal cost pressure or pricing power erosion.",
+  "Market Cap":     "Total market value of all outstanding shares (Price × Shares). Large cap > $10B, Mid cap $2–10B, Small cap < $2B.",
+  "DCF Value":      "Discounted Cash Flow intrinsic value per share. Projects free cash flows 5 years out, discounts at 10%, adds a terminal value, then subtracts net debt. Green = price is below fair value.",
+  "EV / EBITDA":    "Enterprise Value to EBITDA. Below 8 = potentially cheap. More comparable across companies with different capital structures than P/E.",
+  "FCF Yield":      "Free Cash Flow ÷ Market Cap (%). Above 5% = good; above 8% = strong. Higher means more real cash generated per dollar of market value.",
+};
+
+function MetricRow({ label, value, color = "text-white", tooltip }: { label: string; value: React.ReactNode; color?: string; tooltip?: string }) {
+  const tip = tooltip ?? TOOLTIPS[label];
   return (
     <div className="flex justify-between items-center py-1.5 border-b border-gray-800/50 last:border-0">
-      <span className="text-gray-500 text-xs">{label}</span>
+      <div className="relative group/tip flex items-center gap-1">
+        <span className="text-gray-500 text-xs">{label}</span>
+        {tip && (
+          <>
+            <span className="text-gray-700 text-[9px] cursor-help leading-none select-none">ⓘ</span>
+            <div className="pointer-events-none absolute bottom-full left-0 mb-2 z-50 w-56 rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-[11px] text-gray-300 leading-relaxed opacity-0 group-hover/tip:opacity-100 transition-opacity duration-150 shadow-xl whitespace-normal">
+              {tip}
+            </div>
+          </>
+        )}
+      </div>
       <span className={`font-mono text-xs font-medium ${color}`}>{value}</span>
     </div>
   );
@@ -107,7 +152,7 @@ export default function StockCard({ stock }: Props) {
   ];
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
+    <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-xl">
       {/* Header */}
       <div className="px-6 pt-6 pb-4 border-b border-gray-800/60">
         <div className="flex items-start justify-between gap-4">
@@ -225,7 +270,7 @@ export default function StockCard({ stock }: Props) {
         {/* Score */}
         <div className="mb-4">
           <div className="flex justify-between text-sm mb-1.5">
-            <span className="text-gray-400 font-medium">Oversold Score</span>
+            <span className="text-gray-400 font-medium cursor-help" title="Composite score (0–100) based on RSI, Bollinger Bands, distance from 52-week high, P/E, revenue growth, DCF undervaluation, FCF yield, and other factors. 70+ = Strong Buy, 50+ = Buy, 30+ = Watch.">Oversold Score</span>
             <span className="font-mono font-bold text-white">{stock.oversold_score}<span className="text-gray-600">/100</span></span>
           </div>
           <ScoreBar score={stock.oversold_score} />
@@ -596,7 +641,7 @@ export default function StockCard({ stock }: Props) {
             {stock.piotroski?.score != null && (
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Piotroski F-Score</span>
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest" title="9-point financial health score by Joseph Piotroski. 7–9 = financially strong, 4–6 = moderate, 0–3 = weak (potential value trap).">Piotroski F-Score</span>
                   <span className={`text-sm font-bold font-mono px-2.5 py-0.5 rounded-full ${
                     stock.piotroski.score >= 7 ? "bg-emerald-400/10 text-emerald-400" :
                     stock.piotroski.score <= 2 ? "bg-red-400/10 text-red-400" :
@@ -612,9 +657,20 @@ export default function StockCard({ stock }: Props) {
                       accruals: "Cash Earnings", leverage_decreasing: "Debt ↓", liquidity_increasing: "Liquidity ↑",
                       no_dilution: "No Dilution", gross_margin_increasing: "Margin ↑", asset_turnover_increasing: "Turnover ↑",
                     };
+                    const tips: Record<string, string> = {
+                      roa_positive:             "Return on Assets is positive — the company is profitable on an asset basis.",
+                      cfo_positive:             "Cash Flow from Operations is positive — real cash earnings support reported income.",
+                      roa_increasing:           "Return on Assets improved year-over-year — underlying profitability is strengthening.",
+                      accruals:                 "Operating cash flow exceeds net income — earnings are backed by real cash, not accounting accruals.",
+                      leverage_decreasing:      "Long-term debt as a fraction of assets decreased — the balance sheet is getting healthier.",
+                      liquidity_increasing:     "Current ratio improved — the company is better positioned to cover short-term obligations.",
+                      no_dilution:              "No new shares were issued — existing shareholders aren't being diluted.",
+                      gross_margin_increasing:  "Gross profit margin increased — the core business is becoming more profitable per unit sold.",
+                      asset_turnover_increasing:"Asset turnover ratio improved — the company generates more revenue per dollar of assets.",
+                    };
                     if (passed === null) return null;
                     return (
-                      <span key={key} className={`text-xs px-2 py-0.5 rounded-full font-medium ${passed ? "bg-emerald-400/10 text-emerald-300" : "bg-gray-800 text-gray-600"}`}>
+                      <span key={key} title={tips[key]} className={`text-xs px-2 py-0.5 rounded-full font-medium cursor-help ${passed ? "bg-emerald-400/10 text-emerald-300" : "bg-gray-800 text-gray-600"}`}>
                         {passed ? "✓" : "✗"} {labels[key] ?? key}
                       </span>
                     );
