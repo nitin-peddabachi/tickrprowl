@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import StockModal from "@/components/StockModal";
+import { useApi } from "@/lib/api";
 
 interface Props {
   stocks: any[];
@@ -66,12 +67,38 @@ function exportToCsv(stocks: any[]) {
   URL.revokeObjectURL(url);
 }
 
+type WatchlistStatus = "idle" | "loading" | "added" | "error";
+
 export default function ScannerTable({ stocks }: Props) {
+  const api = useApi();
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("oversold_score");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [filter, setFilter] = useState<string>("all");
   const [sectorFilter, setSectorFilter] = useState<string>("all");
+  const [watchlistStatus, setWatchlistStatus] = useState<Record<string, WatchlistStatus>>({});
+
+  const addToWatchlist = async (e: React.MouseEvent, stock: any) => {
+    e.stopPropagation();
+    const { ticker } = stock;
+    setWatchlistStatus(prev => ({ ...prev, [ticker]: "loading" }));
+    try {
+      await api.post("/api/watchlist/", {
+        ticker,
+        company_name: stock.company_name,
+        sector: stock.sector,
+      });
+      setWatchlistStatus(prev => ({ ...prev, [ticker]: "added" }));
+    } catch (err: any) {
+      if (err.response?.status === 400) {
+        // Already in watchlist — treat as success
+        setWatchlistStatus(prev => ({ ...prev, [ticker]: "added" }));
+      } else {
+        setWatchlistStatus(prev => ({ ...prev, [ticker]: "error" }));
+        setTimeout(() => setWatchlistStatus(prev => ({ ...prev, [ticker]: "idle" })), 2000);
+      }
+    }
+  };
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -163,6 +190,7 @@ export default function ScannerTable({ stocks }: Props) {
           <thead className="bg-gray-900 border-b border-gray-800">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">#</th>
+              <th className="px-3 py-3" />
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Stock</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Signal</th>
               <SortHeader label="Score" col="oversold_score" />
@@ -178,6 +206,29 @@ export default function ScannerTable({ stocks }: Props) {
             {sorted.map((stock, i) => (
               <tr key={stock.ticker} onClick={() => setSelectedTicker(stock.ticker)} className="bg-gray-950 hover:bg-gray-900 transition-colors cursor-pointer">
                 <td className="px-4 py-3 text-gray-600">{i + 1}</td>
+                <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
+                  {(() => {
+                    const status = watchlistStatus[stock.ticker] ?? "idle";
+                    return (
+                      <button
+                        onClick={e => addToWatchlist(e, stock)}
+                        disabled={status === "loading" || status === "added"}
+                        title={status === "added" ? "In watchlist" : "Add to watchlist"}
+                        className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                          status === "added"
+                            ? "bg-emerald-500/20 text-emerald-400 cursor-default"
+                            : status === "error"
+                            ? "bg-red-500/20 text-red-400"
+                            : status === "loading"
+                            ? "bg-gray-800 text-gray-500 cursor-wait"
+                            : "bg-gray-800 text-gray-400 hover:bg-emerald-500/20 hover:text-emerald-400"
+                        }`}
+                      >
+                        {status === "loading" ? "·" : status === "added" ? "✓" : status === "error" ? "!" : "+"}
+                      </button>
+                    );
+                  })()}
+                </td>
                 <td className="px-4 py-3">
                   <div className="font-bold text-white">{stock.ticker}</div>
                   <div className="text-gray-500 text-xs truncate max-w-[150px]">{stock.company_name}</div>
