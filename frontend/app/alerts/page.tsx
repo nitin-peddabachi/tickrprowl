@@ -104,7 +104,7 @@ export default function AlertsPage() {
   const selectedType = ALERT_TYPES.find((t) => t.value === alertType);
 
   return (
-    <main className="min-h-screen text-white p-8">
+    <main className="min-h-screen bg-transparent text-white p-8">
       <div className="max-w-4xl mx-auto">
         <div className="relative mb-8">
           <div className="absolute -top-6 left-0 w-72 h-28 bg-emerald-500/8 rounded-full blur-3xl pointer-events-none" />

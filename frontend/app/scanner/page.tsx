@@ -67,7 +67,7 @@ export default function ScannerPage() {
   };
 
   return (
-    <main className="min-h-screen text-white p-8">
+    <main className="min-h-screen bg-transparent text-white p-8">
       <div className="max-w-6xl mx-auto">
         {/* Page header with glow */}
         <div className="relative mb-8">

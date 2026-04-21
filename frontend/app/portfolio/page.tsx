@@ -295,7 +295,7 @@ export default function PortfolioPage() {
   );
 
   return (
-    <main className="min-h-screen text-white p-8">
+    <main className="min-h-screen bg-transparent text-white p-8">
       <div className="max-w-7xl mx-auto">
 
         {/* Header */}

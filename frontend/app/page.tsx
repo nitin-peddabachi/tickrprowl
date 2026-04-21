@@ -32,7 +32,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen text-white">
+    <main className="min-h-screen bg-transparent text-white">
       {/* Hero */}
       <div className="relative">
         {/* Background glow */}

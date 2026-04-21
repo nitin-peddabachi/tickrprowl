@@ -68,7 +68,7 @@ export default function WatchlistPage() {
   const steals = items.filter((i) => i.analysis?.is_absolute_steal).length;
 
   return (
-    <main className="min-h-screen text-white p-8">
+    <main className="min-h-screen bg-transparent text-white p-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-start justify-between mb-8">
           <div className="relative">
