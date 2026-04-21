@@ -576,7 +576,7 @@ def get_stock_analysis(ticker: str) -> dict:
         rsi_divergence_detected=rsi_divergence["detected"],
     )
 
-    pct_from_low = round((current_price - price_52w_low) / price_52w_low * 100, 2) if price_52w_low else 0
+    pct_from_low = round((current_price - price_52w_low) / price_52w_low * 100, 2) if price_52w_low else None
 
     signal_result = _get_signal(
         oversold_score=oversold_score,
@@ -875,7 +875,7 @@ def _get_signal(
             reasons.append(f"P/E of {pe_ratio:.1f} — historically expensive valuation")
         if macd_line is not None and signal_line is not None and macd_line < signal_line:
             reasons.append("MACD bearish crossover — momentum weakening")
-        if analyst_rating is not None and analyst_rating >= 3.5 and analyst_count:
+        if analyst_rating is not None and analyst_rating >= 4.0 and analyst_count:
             reasons.append(f"Analyst consensus bearish ({analyst_count} analysts)")
 
     elif overbought_count >= 3 and oversold_score < 25:
