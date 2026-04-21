@@ -110,12 +110,34 @@ function MetricRow({ label, value, color = "text-white", tooltip }: { label: str
   );
 }
 
-function AnalystLabel({ rating }: { rating: number }) {
-  if (rating <= 1.5) return <span className="text-emerald-400 font-semibold">Strong Buy</span>;
-  if (rating <= 2.5) return <span className="text-green-400 font-semibold">Buy</span>;
-  if (rating <= 3.5) return <span className="text-yellow-400 font-semibold">Hold</span>;
-  if (rating <= 4.5) return <span className="text-orange-400 font-semibold">Underperform</span>;
-  return <span className="text-red-400 font-semibold">Sell</span>;
+function AnalystConsensus({ rating, count }: { rating: number; count?: number }) {
+  const label =
+    rating <= 1.5 ? { text: "Strong Buy", color: "text-emerald-400" } :
+    rating <= 2.5 ? { text: "Buy", color: "text-green-400" } :
+    rating <= 3.5 ? { text: "Hold", color: "text-yellow-400" } :
+    rating <= 4.5 ? { text: "Underperform", color: "text-orange-400" } :
+                   { text: "Sell", color: "text-red-400" };
+  // marker position: rating 1 → 0%, rating 5 → 100%
+  const pct = ((rating - 1) / 4) * 100;
+  return (
+    <div className="flex items-center gap-3 flex-1 min-w-0">
+      <div className="flex flex-col gap-1 min-w-0 flex-1">
+        <div className="flex items-center justify-between">
+          <span className={`text-xs font-bold ${label.color}`}>{label.text}</span>
+          {count && <span className="text-[10px] text-gray-600">{count} analysts</span>}
+        </div>
+        <div className="relative h-1.5 rounded-full bg-gradient-to-r from-emerald-500 via-yellow-400 to-red-500">
+          <div
+            className="absolute top-1/2 w-3 h-3 rounded-full bg-white border-2 border-gray-900 shadow"
+            style={{ left: `${pct}%`, transform: "translate(-50%, -50%)" }}
+          />
+        </div>
+        <div className="flex justify-between text-[9px] text-gray-700 font-mono">
+          <span>Buy</span><span>Hold</span><span>Sell</span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 type Tab = "technicals" | "fundamentals" | "analysis" | "insider";
@@ -295,45 +317,72 @@ export default function StockCard({ stock }: Props) {
 
         {/* Analyst Consensus — always visible */}
         {analyst.rating != null && (
-          <div className="mb-4 flex items-center justify-between rounded-xl border border-gray-800 bg-gray-800/30 px-4 py-2.5 gap-4 flex-wrap">
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Analyst</span>
-              <AnalystLabel rating={analyst.rating} />
-              {analyst.count && <span className="text-xs text-gray-600">({analyst.count})</span>}
-            </div>
-            {analyst.target_mean && (
-              <div className="flex items-center gap-3 text-xs font-mono">
-                <span className="text-gray-500">Target</span>
-                <span className="text-white font-semibold">${num(analyst.target_mean)}</span>
-                {analyst.target_mean !== stock.current_price && (
-                  <span className={analyst.target_mean > stock.current_price ? "text-emerald-400" : "text-red-400"}>
-                    {analyst.target_mean > stock.current_price ? "+" : ""}
-                    {((analyst.target_mean - stock.current_price) / stock.current_price * 100).toFixed(1)}%
-                  </span>
-                )}
-                {analyst.target_low && analyst.target_high && (
-                  <span className="text-gray-700">${num(analyst.target_low)}–${num(analyst.target_high)}</span>
-                )}
+          <div className="mb-4 rounded-xl border border-gray-800 bg-gray-800/30 px-4 py-3">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest shrink-0">Analyst</span>
+                <AnalystConsensus rating={analyst.rating} count={analyst.count} />
               </div>
-            )}
+              {analyst.target_mean && (
+                <div className="flex items-center gap-2 text-xs font-mono shrink-0">
+                  <span className="text-gray-500">Target</span>
+                  <span className="text-white font-semibold">${num(analyst.target_mean)}</span>
+                  {analyst.target_mean !== stock.current_price && (
+                    <span className={analyst.target_mean > stock.current_price ? "text-emerald-400" : "text-red-400"}>
+                      {analyst.target_mean > stock.current_price ? "+" : ""}
+                      {((analyst.target_mean - stock.current_price) / stock.current_price * 100).toFixed(1)}%
+                    </span>
+                  )}
+                  {analyst.target_low && analyst.target_high && (
+                    <span className="text-gray-700">${num(analyst.target_low)}–${num(analyst.target_high)}</span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {/* Quick Stats Strip */}
         <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {[
-            { label: "Market Cap", value: fmtMarketCap(stock.market_cap) },
-            { label: "P/E Ratio",  value: stock.fundamentals?.pe_ratio != null ? num(stock.fundamentals.pe_ratio) : "N/A" },
-            { label: "Beta",       value: stock.fundamentals?.beta != null ? num(stock.fundamentals.beta) : "N/A" },
-            { label: "52w Range",  value: stock.price_52w_low != null && stock.price_52w_high != null
-                ? `$${num(stock.price_52w_low)}–$${num(stock.price_52w_high)}`
-                : "N/A" },
-          ].map(({ label, value }) => (
-            <div key={label} className="rounded-lg bg-gray-800/40 border border-gray-800 px-3 py-2">
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">{label}</p>
-              <p className="text-xs font-mono font-semibold text-white truncate">{value}</p>
-            </div>
-          ))}
+          <div className="rounded-lg bg-gray-800/40 border border-gray-800 px-3 py-2">
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Market Cap</p>
+            <p className="text-xs font-mono font-semibold text-white">{fmtMarketCap(stock.market_cap)}</p>
+          </div>
+          <div className="rounded-lg bg-gray-800/40 border border-gray-800 px-3 py-2">
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">P/E Ratio</p>
+            <p className="text-xs font-mono font-semibold text-white">{stock.fundamentals?.pe_ratio != null ? num(stock.fundamentals.pe_ratio) : "N/A"}</p>
+          </div>
+          <div className="rounded-lg bg-gray-800/40 border border-gray-800 px-3 py-2">
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Beta</p>
+            <p className="text-xs font-mono font-semibold text-white">{stock.fundamentals?.beta != null ? num(stock.fundamentals.beta) : "N/A"}</p>
+          </div>
+          {/* 52w Range — visual slider bar */}
+          <div className="rounded-lg bg-gray-800/40 border border-gray-800 px-3 py-2">
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">52w Range</p>
+            {stock.price_52w_low != null && stock.price_52w_high != null && stock.price_52w_high > stock.price_52w_low ? (() => {
+              const pct = Math.min(Math.max(
+                ((stock.current_price - stock.price_52w_low) / (stock.price_52w_high - stock.price_52w_low)) * 100,
+                2), 98);
+              return (
+                <>
+                  <div className="relative h-1 bg-gray-700 rounded-full mx-0.5 mt-1.5 mb-2">
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-r from-red-500/40 via-yellow-500/30 to-emerald-500/40" />
+                    <div
+                      className="absolute top-1/2 w-2.5 h-2.5 rounded-full bg-white border-2 border-gray-900 shadow"
+                      style={{ left: `${pct}%`, transform: "translate(-50%, -50%)" }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[9px] font-mono text-gray-600">
+                    <span>${num(stock.price_52w_low, 0)}</span>
+                    <span className="text-gray-500">{pct.toFixed(0)}%</span>
+                    <span>${num(stock.price_52w_high, 0)}</span>
+                  </div>
+                </>
+              );
+            })() : (
+              <p className="text-xs font-mono font-semibold text-white">N/A</p>
+            )}
+          </div>
         </div>
 
         {/* Tabs */}
