@@ -11,8 +11,6 @@ export default function Navbar() {
   const [unread, setUnread] = useState(0);
   const { isSignedIn, getToken } = useAuth();
 
-  if (pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) return null;
-
   useEffect(() => {
     if (!isSignedIn) return;
     const fetchUnread = async () => {
@@ -37,6 +35,8 @@ export default function Navbar() {
     { href: "/portfolio", label: "Portfolio" },
     { href: "/alerts", label: "Alerts" },
   ];
+
+  if (pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) return null;
 
   return (
     <nav className="bg-gray-900/80 backdrop-blur-md border-b border-gray-800 px-8 py-0 sticky top-0 z-50">
