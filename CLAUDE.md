@@ -105,6 +105,6 @@ Signals: 70+ = Strong Buy, 50+ = Buy, 30+ = Watch, else Neutral
 
 ## GitHub
 
-- Repo: `github.com/nitin-peddabachi/tickrprowl` (private)
+- Repo: `github.com/nitin-peddabachi/tickrprowl`
 - Branch: `main`
 - Auto-deploys: not configured (runs locally only)

@@ -1,6 +1,6 @@
 # TickrProwl
 
-A personal stock analysis app to identify oversold stocks using technical indicators (RSI, Bollinger Bands, Stochastic), fundamentals (DCF, Piotroski F-Score, FCF Yield), and analyst consensus. Supports portfolio tracking via Fidelity and E*Trade CSV imports.
+A personal stock analysis app to identify oversold stocks using technical indicators (RSI, Bollinger Bands, Stochastic), fundamentals (DCF, Piotroski F-Score, FCF Yield), and analyst consensus. Supports portfolio tracking via broker CSV imports.
 
 ## Requirements
 
@@ -47,8 +47,7 @@ Go to the **Portfolio** tab and click **Import CSV**.
 | Broker | How to export |
 |---|---|
 | Fidelity | Accounts → Portfolio → Positions → Download CSV |
-| E*Trade (positions) | My Portfolio → Holdings → Download → Positions CSV |
-| E*Trade (ESPP) | Export holdings from your Stock Plan account |
+| Robinhood | Account → Statements & History → Export → Portfolio CSV |
 
 Re-importing replaces only that broker's data — your other accounts are untouched.
 
