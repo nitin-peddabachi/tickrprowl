@@ -6,25 +6,25 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { useApi } from "@/lib/api";
 
 const BROKER_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  fidelity:    { label: "Fidelity",     color: "text-green-400",  bg: "bg-green-400/10 border-green-400/30"  },
-  etrade:      { label: "E*Trade",      color: "text-blue-400",   bg: "bg-blue-400/10 border-blue-400/30"   },
-  etrade_espp: { label: "E*Trade ESPP", color: "text-purple-400", bg: "bg-purple-400/10 border-purple-400/30" },
+  fidelity:    { label: "Fidelity",     color: "text-[var(--buy)]",    bg: "bg-[var(--buy)]/10 border-[var(--buy)]/30"  },
+  etrade:      { label: "E*Trade",      color: "text-blue-400",        bg: "bg-blue-400/10 border-blue-400/30"          },
+  etrade_espp: { label: "E*Trade ESPP", color: "text-purple-400",      bg: "bg-purple-400/10 border-purple-400/30"      },
 };
 
 const CASH_SYMBOLS = new Set(["SPAXX", "FDRXX", "FCASH", "CORE**", "MMDA1", "MMDA4", "SWEEP"]);
 
 const SECTOR_COLORS = [
-  "#10b981","#3b82f6","#f59e0b","#8b5cf6",
+  "var(--amber)","#3b82f6","#f59e0b","#8b5cf6",
   "#ef4444","#06b6d4","#f97316","#84cc16","#ec4899","#6b7280",
 ];
 
 const signalConfig: Record<string, { classes: string; icon: string }> = {
-  "Strong Buy":  { classes: "text-emerald-400 bg-emerald-400/10", icon: "▲▲" },
-  "Buy":         { classes: "text-green-400 bg-green-400/10",     icon: "▲"  },
-  "Watch":       { classes: "text-yellow-400 bg-yellow-400/10",   icon: "◎"  },
-  "Neutral":     { classes: "text-gray-400 bg-gray-400/10",       icon: "─"  },
-  "Sell":        { classes: "text-orange-400 bg-orange-400/10",   icon: "▼"  },
-  "Strong Sell": { classes: "text-red-400 bg-red-400/10",         icon: "▼▼" },
+  "Strong Buy":  { classes: "text-[var(--buy)] bg-[var(--amber-glow)]",           icon: "▲▲" },
+  "Buy":         { classes: "text-[var(--buy)] bg-[var(--amber-glow)]",           icon: "▲"  },
+  "Watch":       { classes: "text-[var(--warn)] bg-[var(--warn)]/10",             icon: "◎"  },
+  "Neutral":     { classes: "text-[var(--paper-fade)] bg-[var(--paper-fade)]/10", icon: "─"  },
+  "Sell":        { classes: "text-[var(--sell)] bg-[var(--sell)]/10",             icon: "▼"  },
+  "Strong Sell": { classes: "text-[var(--sell)] bg-[var(--sell)]/10",             icon: "▼▼" },
 };
 
 function fmt(val: any, decimals = 2) {
@@ -109,10 +109,10 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-md p-6 shadow-2xl animate-fade-in">
+      <div className="bg-[var(--ink-surface)] border border-[var(--ink-hairline)] rounded-none w-full max-w-md p-6 shadow-2xl animate-fade-in">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-white">Import Portfolio</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-white text-xl leading-none">✕</button>
+          <h2 className="text-lg font-bold text-[var(--paper)]">Import Portfolio</h2>
+          <button onClick={onClose} className="text-[var(--paper-fade)] hover:text-[var(--paper)] text-xl leading-none">✕</button>
         </div>
 
         {/* Drop zone */}
@@ -121,8 +121,8 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
           onDrop={handleDrop}
           onDragOver={e => e.preventDefault()}
           onClick={() => document.getElementById("portfolio-file-input")?.click()}
-          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors mb-4 ${
-            file ? "border-emerald-500/50 bg-emerald-500/5" : "border-gray-700 hover:border-gray-500"
+          className={`border-2 border-dashed rounded-none p-8 text-center cursor-pointer transition-colors mb-4 ${
+            file ? "border-[var(--amber)]/50 bg-[var(--amber-glow)]" : "border-[var(--ink-hairline)] hover:border-[var(--ink-divider)]"
           }`}
         >
           <input
@@ -134,20 +134,20 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
           />
           {file ? (
             <div>
-              <p className="text-emerald-400 font-medium text-sm">📄 {file.name}</p>
-              <p className="text-gray-500 text-xs mt-1">{(file.size / 1024).toFixed(1)} KB</p>
+              <p className="text-[var(--amber)] font-medium text-sm">📄 {file.name}</p>
+              <p className="text-[var(--paper-fade)] text-xs mt-1">{(file.size / 1024).toFixed(1)} KB</p>
             </div>
           ) : (
             <div>
-              <p className="text-gray-400 text-sm font-medium">Drop your CSV here or click to browse</p>
-              <p className="text-gray-600 text-xs mt-1">Supports Fidelity and E*Trade exports</p>
+              <p className="text-[var(--paper-fade)] text-sm font-medium">Drop your CSV here or click to browse</p>
+              <p className="text-[var(--paper-vapor)] text-xs mt-1">Supports Fidelity and E*Trade exports</p>
             </div>
           )}
         </div>
 
         {/* Detected broker */}
         {detectedBroker && brokerInfo && (
-          <div className={`flex items-center gap-2 rounded-lg border px-3 py-2 mb-4 text-sm ${brokerInfo.bg}`}>
+          <div className={`flex items-center gap-2 rounded-none border px-3 py-2 mb-4 text-sm ${brokerInfo.bg}`}>
             <span className={`font-semibold ${brokerInfo.color}`}>✓ {brokerInfo.label} format detected</span>
           </div>
         )}
@@ -155,42 +155,42 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
         {/* Account label for E*Trade */}
         {detectedBroker === "etrade" && (
           <div className="mb-4">
-            <label className="text-xs text-gray-500 uppercase tracking-wider block mb-1">
-              Account Label <span className="text-gray-600 normal-case">(e.g. "E*Trade IRA")</span>
+            <label className="text-xs text-[var(--paper-fade)] uppercase tracking-wider block mb-1">
+              Account Label <span className="text-[var(--paper-vapor)] normal-case">(e.g. "E*Trade IRA")</span>
             </label>
             <input
               type="text"
               value={accountLabel}
               onChange={e => setAccountLabel(e.target.value)}
               placeholder="E*Trade Brokerage"
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500"
+              className="w-full bg-[var(--ink-raised)] border border-[var(--ink-hairline)] rounded-none px-3 py-2 text-sm text-[var(--paper)] placeholder-[var(--paper-vapor)] focus:outline-none focus:border-[var(--amber)]"
             />
-            <p className="text-xs text-gray-600 mt-1">Re-importing with the same label will replace those positions.</p>
+            <p className="text-xs text-[var(--paper-vapor)] mt-1">Re-importing with the same label will replace those positions.</p>
           </div>
         )}
 
         {/* Instructions */}
         {!file && (
-          <div className="mb-4 rounded-lg bg-gray-800/50 px-4 py-3 text-xs text-gray-500 space-y-1">
-            <p className="font-semibold text-gray-400 mb-1">How to export:</p>
-            <p><span className="text-gray-300">Fidelity:</span> Accounts → Portfolio → Positions → Download CSV</p>
-            <p><span className="text-gray-300">E*Trade:</span> My Portfolio → Holdings → Download → Positions CSV</p>
+          <div className="mb-4 rounded-none bg-[var(--ink-raised)] px-4 py-3 text-xs text-[var(--paper-fade)] space-y-1">
+            <p className="font-semibold text-[var(--paper-fade)] mb-1">How to export:</p>
+            <p><span className="text-[var(--paper)]">Fidelity:</span> Accounts → Portfolio → Positions → Download CSV</p>
+            <p><span className="text-[var(--paper)]">E*Trade:</span> My Portfolio → Holdings → Download → Positions CSV</p>
           </div>
         )}
 
-        {result && <p className="text-emerald-400 text-sm mb-4">{result}</p>}
-        {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+        {result && <p className="text-[var(--buy)] text-sm mb-4">{result}</p>}
+        {error && <p className="text-[var(--sell)] text-sm mb-4">{error}</p>}
 
         <div className="flex gap-3">
           <button
             onClick={doImport}
             disabled={!file || importing || (detectedBroker === "etrade" && !accountLabel.trim())}
-            className="flex-1 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-800 disabled:text-gray-600 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm"
+            className="flex-1 bg-[var(--amber)] hover:opacity-90 disabled:opacity-40 disabled:text-[var(--paper-vapor)] text-[var(--ink-bg)] font-semibold py-2.5 rounded-none transition-opacity text-sm"
           >
             {importing ? "Importing…" : "Import"}
           </button>
           {result && (
-            <button onClick={onClose} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-semibold py-2.5 rounded-xl text-sm">
+            <button onClick={onClose} className="flex-1 bg-[var(--ink-raised)] hover:bg-[var(--ink-divider)] text-[var(--paper)] font-semibold py-2.5 rounded-none text-sm">
               Done
             </button>
           )}
@@ -287,7 +287,7 @@ export default function PortfolioPage() {
 
   const SortTh = ({ label, col }: { label: string; col: string }) => (
     <th
-      className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-emerald-400 select-none whitespace-nowrap"
+      className="px-4 py-3 text-left text-xs font-semibold text-[var(--paper-fade)] uppercase tracking-wider cursor-pointer hover:text-[var(--amber)] select-none whitespace-nowrap"
       onClick={() => handleSort(col)}
     >
       {label} {sortKey === col ? (sortDir === "desc" ? "↓" : "↑") : ""}
@@ -295,40 +295,35 @@ export default function PortfolioPage() {
   );
 
   return (
-    <main className="min-h-screen bg-transparent text-white p-8">
+    <main className="min-h-screen bg-transparent text-[var(--paper)] p-8">
       <div className="max-w-7xl mx-auto">
 
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
-          <div className="relative">
-            <div className="absolute -top-6 -left-4 w-72 h-28 bg-emerald-500/8 rounded-full blur-3xl pointer-events-none" />
-            <div className="relative">
-              <h1 className="text-4xl font-extrabold mb-1 tracking-tight bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
-                Portfolio
-              </h1>
-              <p className="text-gray-500 text-sm">
-                Consolidated across all brokers · live analysis overlaid
-              </p>
-            </div>
+          <div>
+            <h1 className="serif font-bold text-[var(--paper)] text-4xl tracking-tight mb-1">Portfolio</h1>
+            <p className="text-[var(--paper-fade)] text-sm">
+              Consolidated across all brokers · live analysis overlaid
+            </p>
           </div>
           <div className="flex flex-col items-end gap-2">
             <div className="flex gap-2">
               <button
                 onClick={fetchPortfolio}
                 disabled={loading}
-                className="text-sm px-4 py-2 rounded-lg border border-gray-700 text-gray-300 hover:border-emerald-500 hover:text-emerald-400 transition-colors disabled:opacity-50"
+                className="text-sm px-4 py-2 rounded-none border border-[var(--ink-hairline)] text-[var(--paper-fade)] hover:border-[var(--amber)] hover:text-[var(--amber)] transition-colors disabled:opacity-50"
               >
                 {loading ? "Refreshing…" : "↺ Refresh"}
               </button>
               <button
                 onClick={() => setShowImport(true)}
-                className="text-sm px-4 py-2 rounded-lg border border-gray-700 text-gray-300 hover:border-emerald-500 hover:text-emerald-400 transition-colors"
+                className="text-sm px-4 py-2 rounded-none border border-[var(--ink-hairline)] text-[var(--paper-fade)] hover:border-[var(--amber)] hover:text-[var(--amber)] transition-colors"
               >
                 ↑ Import CSV
               </button>
             </div>
             {lastUpdated && (
-              <p className="text-xs text-gray-600">Updated {lastUpdated.toLocaleTimeString()}</p>
+              <p className="text-xs text-[var(--paper-vapor)]">Updated {lastUpdated.toLocaleTimeString()}</p>
             )}
           </div>
         </div>
@@ -344,16 +339,16 @@ export default function PortfolioPage() {
         {!loading && positions.length === 0 && (
           <div
             onClick={() => setShowImport(true)}
-            className="border-2 border-dashed border-gray-700 rounded-xl p-16 text-center hover:border-emerald-500 transition-colors cursor-pointer"
+            className="border-2 border-dashed border-[var(--ink-hairline)] rounded-none p-16 text-center hover:border-[var(--amber)] transition-colors cursor-pointer"
           >
-            <p className="text-gray-400 text-lg mb-2">No positions imported yet</p>
-            <p className="text-gray-600 text-sm">Click to import from Fidelity or E*Trade</p>
+            <p className="text-[var(--paper-fade)] text-lg mb-2">No positions imported yet</p>
+            <p className="text-[var(--paper-vapor)] text-sm">Click to import from Fidelity or E*Trade</p>
           </div>
         )}
 
         {loading && (
-          <div className="flex items-center gap-3 text-gray-400 mt-20 justify-center">
-            <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+          <div className="flex items-center gap-3 text-[var(--paper-fade)] mt-20 justify-center">
+            <div className="w-5 h-5 border-2 border-[var(--amber)] border-t-transparent rounded-full animate-spin" />
             Loading portfolio with live analysis…
           </div>
         )}
@@ -362,28 +357,28 @@ export default function PortfolioPage() {
           <>
             {/* ── Summary Cards ── */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
-                <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Total Value</p>
-                <p className="text-2xl font-bold text-white font-mono">{fmtValue(totalValue)}</p>
+              <div className="bg-[var(--ink-surface)] border border-[var(--ink-hairline)] rounded-none px-5 py-4">
+                <p className="text-[var(--paper-fade)] text-xs uppercase tracking-wider mb-1">Total Value</p>
+                <p className="text-2xl font-bold text-[var(--paper)] font-mono">{fmtValue(totalValue)}</p>
               </div>
-              <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
-                <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Total G/L</p>
-                <p className={`text-2xl font-bold font-mono ${totalGL >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+              <div className="bg-[var(--ink-surface)] border border-[var(--ink-hairline)] rounded-none px-5 py-4">
+                <p className="text-[var(--paper-fade)] text-xs uppercase tracking-wider mb-1">Total G/L</p>
+                <p className={`text-2xl font-bold font-mono ${totalGL >= 0 ? "text-[var(--buy)]" : "text-[var(--sell)]"}`}>
                   {fmtMoney(totalGL)}
                 </p>
-                <p className={`text-xs font-mono mt-0.5 ${totalGL >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                <p className={`text-xs font-mono mt-0.5 ${totalGL >= 0 ? "text-[var(--buy)]/60" : "text-[var(--sell)]/60"}`}>
                   {totalGL >= 0 ? "+" : ""}{totalGLPct.toFixed(2)}%
                 </p>
               </div>
-              <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
-                <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Cost Basis</p>
-                <p className="text-2xl font-bold text-white font-mono">{fmtValue(totalCost)}</p>
+              <div className="bg-[var(--ink-surface)] border border-[var(--ink-hairline)] rounded-none px-5 py-4">
+                <p className="text-[var(--paper-fade)] text-xs uppercase tracking-wider mb-1">Cost Basis</p>
+                <p className="text-2xl font-bold text-[var(--paper)] font-mono">{fmtValue(totalCost)}</p>
               </div>
-              <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
-                <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Positions</p>
-                <p className="text-2xl font-bold text-white font-mono">{filtered.length}</p>
+              <div className="bg-[var(--ink-surface)] border border-[var(--ink-hairline)] rounded-none px-5 py-4">
+                <p className="text-[var(--paper-fade)] text-xs uppercase tracking-wider mb-1">Positions</p>
+                <p className="text-2xl font-bold text-[var(--paper)] font-mono">{filtered.length}</p>
                 {brokers.length > 1 && (
-                  <p className="text-xs text-gray-600 mt-0.5">{brokers.length} brokers</p>
+                  <p className="text-xs text-[var(--paper-vapor)] mt-0.5">{brokers.length} brokers</p>
                 )}
               </div>
             </div>
@@ -393,8 +388,8 @@ export default function PortfolioPage() {
 
               {/* Broker breakdown — only shown when multi-broker */}
               {brokers.length > 1 && (
-                <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">By Broker</h3>
+                <div className="bg-[var(--ink-surface)] border border-[var(--ink-hairline)] rounded-none p-5">
+                  <h3 className="text-xs font-bold text-[var(--paper-fade)] uppercase tracking-widest mb-4">By Broker</h3>
                   <div className="space-y-3">
                     {brokerStats.map(b => {
                       const cfg = BROKER_CONFIG[b.broker] || BROKER_CONFIG.fidelity;
@@ -403,12 +398,12 @@ export default function PortfolioPage() {
                         <div key={b.broker}>
                           <div className="flex justify-between text-xs mb-1">
                             <span className={`font-semibold ${cfg.color}`}>{cfg.label}</span>
-                            <span className="text-gray-400">{pct.toFixed(1)}%</span>
+                            <span className="text-[var(--paper-fade)]">{pct.toFixed(1)}%</span>
                           </div>
-                          <div className="h-1.5 bg-gray-800 rounded-full mb-1">
-                            <div className="h-1.5 rounded-full bg-emerald-500" style={{ width: `${pct}%` }} />
+                          <div className="h-[3px] bg-[var(--ink-raised)] mb-1">
+                            <div className="h-[3px] bg-[var(--amber)]" style={{ width: `${pct}%` }} />
                           </div>
-                          <div className="flex justify-between text-xs text-gray-500">
+                          <div className="flex justify-between text-xs text-[var(--paper-fade)]">
                             <span>{b.count} positions</span>
                             <span className="font-mono">{fmtValue(b.value)}</span>
                           </div>
@@ -420,24 +415,24 @@ export default function PortfolioPage() {
               )}
 
               {/* Sector allocation */}
-              <div className={`bg-gray-900 border border-gray-800 rounded-xl p-5 ${brokers.length > 1 ? "" : "lg:col-span-1"}`}>
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Sector Allocation</h3>
+              <div className={`bg-[var(--ink-surface)] border border-[var(--ink-hairline)] rounded-none p-5 ${brokers.length > 1 ? "" : "lg:col-span-1"}`}>
+                <h3 className="text-xs font-bold text-[var(--paper-fade)] uppercase tracking-widest mb-4">Sector Allocation</h3>
                 {sectorData.map((s, i) => (
                   <div key={s.sector} className="mb-2.5">
                     <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-400 truncate max-w-[160px]">{s.sector}</span>
-                      <span className="text-gray-500 font-mono">{s.pct}%</span>
+                      <span className="text-[var(--paper-fade)] truncate max-w-[160px]">{s.sector}</span>
+                      <span className="text-[var(--paper-fade)] font-mono">{s.pct}%</span>
                     </div>
-                    <div className="h-1.5 bg-gray-800 rounded-full">
-                      <div className="h-1.5 rounded-full" style={{ width: `${s.pct}%`, backgroundColor: SECTOR_COLORS[i % SECTOR_COLORS.length] }} />
+                    <div className="h-[3px] bg-[var(--ink-raised)]">
+                      <div className="h-[3px]" style={{ width: `${s.pct}%`, backgroundColor: SECTOR_COLORS[i % SECTOR_COLORS.length] }} />
                     </div>
                   </div>
                 ))}
               </div>
 
               {/* Account breakdown */}
-              <div className={`bg-gray-900 border border-gray-800 rounded-xl p-5 ${brokers.length > 1 ? "" : "lg:col-span-2"}`}>
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">By Account</h3>
+              <div className={`bg-[var(--ink-surface)] border border-[var(--ink-hairline)] rounded-none p-5 ${brokers.length > 1 ? "" : "lg:col-span-2"}`}>
+                <h3 className="text-xs font-bold text-[var(--paper-fade)] uppercase tracking-widest mb-4">By Account</h3>
                 <div className="space-y-2">
                   {accounts.map(acct => {
                     const ap = positions.filter(p => p.account_name === acct);
@@ -447,19 +442,19 @@ export default function PortfolioPage() {
                     const broker    = ap[0]?.broker || "fidelity";
                     const cfg       = BROKER_CONFIG[broker] || BROKER_CONFIG.fidelity;
                     return (
-                      <div key={acct} className="flex items-center justify-between py-2 border-b border-gray-800 last:border-0">
+                      <div key={acct} className="flex items-center justify-between py-2 border-b border-[var(--ink-hairline)] last:border-0">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${cfg.bg} ${cfg.color}`}>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-none border ${cfg.bg} ${cfg.color}`}>
                               {cfg.label}
                             </span>
-                            <p className="text-white text-sm font-medium truncate">{acct}</p>
+                            <p className="text-[var(--paper)] text-sm font-medium truncate">{acct}</p>
                           </div>
-                          <p className="text-gray-600 text-xs mt-0.5">{ap.length} positions · {acctPct.toFixed(1)}%</p>
+                          <p className="text-[var(--paper-vapor)] text-xs mt-0.5">{ap.length} positions · {acctPct.toFixed(1)}%</p>
                         </div>
                         <div className="text-right shrink-0 ml-4">
-                          <p className="text-white font-semibold font-mono text-sm">{fmtValue(acctValue)}</p>
-                          <p className={`text-xs font-mono ${acctGL >= 0 ? "text-emerald-400" : "text-red-400"}`}>{fmtMoney(acctGL)}</p>
+                          <p className="text-[var(--paper)] font-semibold font-mono text-sm">{fmtValue(acctValue)}</p>
+                          <p className={`text-xs font-mono ${acctGL >= 0 ? "text-[var(--buy)]" : "text-[var(--sell)]"}`}>{fmtMoney(acctGL)}</p>
                         </div>
                       </div>
                     );
@@ -479,17 +474,17 @@ export default function PortfolioPage() {
                       <button
                         key={b}
                         onClick={() => { setBrokerFilter(b); setAccountFilter("all"); }}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${
+                        className={`px-3 py-1 rounded-none text-xs font-semibold border transition-colors ${
                           brokerFilter === b
-                            ? "bg-emerald-500 border-emerald-500 text-white"
-                            : "border-gray-700 text-gray-400 hover:text-white"
+                            ? "bg-[var(--amber)] border-[var(--amber)] text-[var(--ink-bg)]"
+                            : "border-[var(--ink-hairline)] text-[var(--paper-fade)] hover:text-[var(--paper)]"
                         }`}
                       >
                         {b === "all" ? "All Brokers" : cfg?.label}
                       </button>
                     );
                   })}
-                  <span className="text-gray-700 text-xs">|</span>
+                  <span className="text-[var(--ink-divider)] text-xs">|</span>
                 </div>
               )}
 
@@ -500,10 +495,10 @@ export default function PortfolioPage() {
                   <button
                     key={a}
                     onClick={() => setAccountFilter(accountFilter === a ? "all" : a)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                    className={`px-3 py-1 rounded-none text-xs font-medium transition-colors ${
                       accountFilter === a
-                        ? "bg-emerald-500 text-white"
-                        : "bg-gray-800 text-gray-400 hover:text-white"
+                        ? "bg-[var(--amber)] text-[var(--ink-bg)]"
+                        : "bg-[var(--ink-raised)] text-[var(--paper-fade)] hover:text-[var(--paper)]"
                     }`}
                   >
                     {a}
@@ -512,24 +507,24 @@ export default function PortfolioPage() {
             </div>
 
             {/* ── Positions Table ── */}
-            <div className="overflow-x-auto rounded-xl border border-gray-800">
+            <div className="overflow-x-auto rounded-none border border-[var(--ink-hairline)]">
               <table className="w-full text-sm">
-                <thead className="bg-gray-900 border-b border-gray-800">
+                <thead className="bg-[var(--ink-surface)] border-b border-[var(--ink-hairline)]">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Stock</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Shares</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Avg Cost</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Last Price</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--paper-fade)] uppercase tracking-wider">Stock</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--paper-fade)] uppercase tracking-wider">Shares</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--paper-fade)] uppercase tracking-wider">Avg Cost</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--paper-fade)] uppercase tracking-wider">Last Price</th>
                     <SortTh label="Value" col="current_value" />
                     <SortTh label="G/L $" col="total_gl_dollar" />
                     <SortTh label="G/L %" col="total_gl_pct" />
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Signal</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--paper-fade)] uppercase tracking-wider">Signal</th>
                     <SortTh label="Score" col="oversold_score" />
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">RSI</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Account</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--paper-fade)] uppercase tracking-wider">RSI</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--paper-fade)] uppercase tracking-wider">Account</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800">
+                <tbody className="divide-y divide-[var(--ink-hairline)]">
                   {sorted.map(p => {
                     const a = p.analysis;
                     const glPos = (p.total_gl_dollar || 0) >= 0;
@@ -537,7 +532,7 @@ export default function PortfolioPage() {
                     const sig = a ? (signalConfig[a.signal] || signalConfig["Neutral"]) : null;
                     const brokerCfg = BROKER_CONFIG[p.broker] || BROKER_CONFIG.fidelity;
                     return (
-                      <tr key={p.id} className="bg-gray-950 hover:bg-gray-900 transition-colors">
+                      <tr key={p.id} className="bg-[var(--ink-bg)] hover:bg-[var(--ink-surface)] transition-colors">
                         {/* Stock */}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
@@ -546,81 +541,81 @@ export default function PortfolioPage() {
                             <div>
                               <div
                                 onClick={() => !isCash && setSelectedTicker(p.ticker)}
-                                className={`font-bold text-white ${!isCash ? "hover:text-emerald-400 cursor-pointer transition-colors" : ""}`}
+                                className={`font-bold text-[var(--paper)] ${!isCash ? "hover:text-[var(--amber)] cursor-pointer transition-colors" : ""}`}
                               >
                                 {p.ticker}
                               </div>
-                              <div className="text-gray-500 text-xs truncate max-w-[150px]">{p.company_name}</div>
+                              <div className="text-[var(--paper-fade)] text-xs truncate max-w-[150px]">{p.company_name}</div>
                             </div>
                           </div>
                         </td>
                         {/* Shares */}
-                        <td className="px-4 py-3 text-gray-300 font-mono text-xs">{fmt(p.shares)}</td>
+                        <td className="px-4 py-3 text-[var(--paper-fade)] font-mono text-xs">{fmt(p.shares)}</td>
                         {/* Avg Cost */}
-                        <td className="px-4 py-3 text-gray-300 font-mono text-xs">{p.avg_cost ? `$${fmt(p.avg_cost)}` : "—"}</td>
+                        <td className="px-4 py-3 text-[var(--paper-fade)] font-mono text-xs">{p.avg_cost ? `$${fmt(p.avg_cost)}` : "—"}</td>
                         {/* Last Price */}
                         <td className="px-4 py-3">
                           {a?.current_price != null ? (
                             <div>
-                              <span className="text-white font-mono text-xs">${fmt(a.current_price)}</span>
+                              <span className="text-[var(--paper)] font-mono text-xs">${fmt(a.current_price)}</span>
                               {a.price_change_pct != null && (
-                                <span className={`block text-xs font-mono ${a.price_change_pct >= 0 ? "text-emerald-500" : "text-red-500"}`}>
+                                <span className={`block text-xs font-mono ${a.price_change_pct >= 0 ? "text-[var(--buy-strong)]" : "text-[var(--sell-strong)]"}`}>
                                   {a.price_change_pct >= 0 ? "+" : ""}{fmt(a.price_change_pct)}%
                                 </span>
                               )}
                             </div>
                           ) : p.last_price ? (
-                            <span className="text-gray-400 font-mono text-xs">${fmt(p.last_price)}</span>
+                            <span className="text-[var(--paper-fade)] font-mono text-xs">${fmt(p.last_price)}</span>
                           ) : "—"}
                         </td>
                         {/* Value */}
-                        <td className="px-4 py-3 text-white font-semibold font-mono text-xs">
+                        <td className="px-4 py-3 text-[var(--paper)] font-semibold font-mono text-xs">
                           {p.current_value ? `$${p.current_value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
                         </td>
                         {/* G/L $ */}
-                        <td className={`px-4 py-3 font-mono text-xs font-medium ${glPos ? "text-emerald-400" : "text-red-400"}`}>
+                        <td className={`px-4 py-3 font-mono text-xs font-medium ${glPos ? "text-[var(--buy)]" : "text-[var(--sell)]"}`}>
                           {p.total_gl_dollar != null ? fmtMoney(p.total_gl_dollar) : "—"}
                         </td>
                         {/* G/L % */}
-                        <td className={`px-4 py-3 font-mono text-xs font-medium ${glPos ? "text-emerald-400" : "text-red-400"}`}>
+                        <td className={`px-4 py-3 font-mono text-xs font-medium ${glPos ? "text-[var(--buy)]" : "text-[var(--sell)]"}`}>
                           {p.total_gl_pct != null ? `${p.total_gl_pct >= 0 ? "+" : ""}${fmt(p.total_gl_pct)}%` : "—"}
                         </td>
                         {/* Signal */}
                         <td className="px-4 py-3">
                           {sig ? (
-                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 w-fit ${sig.classes}`}>
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-none flex items-center gap-1 w-fit ${sig.classes}`}>
                               <span className="opacity-60 text-[10px]">{sig.icon}</span>
                               {a.signal}
                             </span>
                           ) : isCash ? (
-                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-400/10 text-blue-400">Cash</span>
-                          ) : <span className="text-gray-600 text-xs">—</span>}
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-none bg-blue-400/10 text-blue-400">Cash</span>
+                          ) : <span className="text-[var(--paper-vapor)] text-xs">—</span>}
                         </td>
                         {/* Score */}
                         <td className="px-4 py-3">
                           {a ? (
                             <div className="flex items-center gap-2">
-                              <div className="w-12 h-1.5 bg-gray-800 rounded-full">
-                                <div className="h-1.5 rounded-full bg-emerald-500" style={{ width: `${a.oversold_score}%` }} />
+                              <div className="w-12 h-[3px] bg-[var(--ink-raised)]">
+                                <div className="h-[3px] bg-[var(--amber)]" style={{ width: `${a.oversold_score}%` }} />
                               </div>
-                              <span className="text-white font-mono text-xs">{a.oversold_score}</span>
+                              <span className="text-[var(--paper)] font-mono text-xs">{a.oversold_score}</span>
                             </div>
                           ) : "—"}
                         </td>
                         {/* RSI */}
                         <td className={`px-4 py-3 font-mono text-xs font-medium ${
-                          a?.technicals?.rsi < 30 ? "text-emerald-400" :
-                          a?.technicals?.rsi > 70 ? "text-red-400" : "text-gray-300"
+                          a?.technicals?.rsi < 30 ? "text-[var(--buy)]" :
+                          a?.technicals?.rsi > 70 ? "text-[var(--sell)]" : "text-[var(--paper-fade)]"
                         }`}>
                           {a ? fmt(a.technicals?.rsi) : "—"}
                         </td>
                         {/* Account */}
                         <td className="px-4 py-3">
                           <div className="flex flex-col gap-1">
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border w-fit ${brokerCfg.bg} ${brokerCfg.color}`}>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-none border w-fit ${brokerCfg.bg} ${brokerCfg.color}`}>
                               {brokerCfg.label}
                             </span>
-                            <span className="text-gray-500 text-xs truncate max-w-[120px]">{p.account_name}</span>
+                            <span className="text-[var(--paper-fade)] text-xs truncate max-w-[120px]">{p.account_name}</span>
                           </div>
                         </td>
                       </tr>

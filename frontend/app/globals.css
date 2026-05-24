@@ -1,37 +1,192 @@
 @import "tailwindcss";
 
+/* ─────────────────────────────────────────────────────────────
+   TickrProwl — Editorial Finance design system
+   Fonts: Fraunces (display serif), IBM Plex Sans, IBM Plex Mono
+   Palette: warm slate ink + bone paper + vintage amber accent
+   ───────────────────────────────────────────────────────────── */
+
 :root {
-  --foreground: #ededed;
+  /* Surfaces — warm near-black slate (deeper than stone-950, warmer than zinc) */
+  --ink-bg:        #0c0a09;
+  --ink-surface:   #14110f;
+  --ink-raised:    #1c1917;
+  --ink-divider:   #292524;
+  --ink-hairline:  #44403c;
+
+  /* Text — bone/cream tones, never pure white */
+  --paper:         #f5f3ee;
+  --paper-dim:     #c2bdb3;
+  --paper-fade:    #8b857a;
+  --paper-ghost:   #5f5a52;
+  --paper-vapor:   #3d3a35;
+
+  /* Single signature accent — vintage amber (think old leather-bound annual reports) */
+  --amber:         #d4a574;
+  --amber-dim:     #a78050;
+  --amber-glow:    rgba(212, 165, 116, 0.12);
+
+  /* Signal colors — warm, readable on dark surfaces, strong > base in brightness */
+  --buy:           #a8d87c;   /* bright warm green */
+  --buy-strong:    #c8f096;   /* luminous for maximum impact */
+  --sell:          #e88070;   /* light coral-red */
+  --sell-strong:   #f0a090;   /* lighter for strong — most visible */
+  --warn:          #f0c060;   /* bright amber for hold/neutral */
+
+  /* Foreground default */
+  --foreground:    var(--paper);
 }
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Map only sans + mono to Tailwind's built-in utilities.
+     The display serif uses a custom `.serif` class to avoid colliding with
+     the CSS `font-display` property name and Tailwind's auto-generated utility. */
+  --font-sans:    var(--font-sans);
+  --font-mono:    var(--font-mono);
+
+  --color-ink:        var(--ink-bg);
+  --color-ink-raised: var(--ink-raised);
+  --color-ink-hair:   var(--ink-hairline);
+  --color-paper:      var(--paper);
+  --color-paper-dim:  var(--paper-dim);
+  --color-paper-fade: var(--paper-fade);
+  --color-amber:      var(--amber);
+  --color-buy:        var(--buy);
+  --color-sell:       var(--sell);
 }
 
-html,
-body {
-  background-color: #030712;
+html, body {
+  background-color: var(--ink-bg);
   color: var(--foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "ss01", "ss02", "cv11";
 }
 
-body {
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 28px 28px;
+/* Paper grain — fine SVG noise overlay, very subtle, gives the slate a tactile warmth */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.9  0 0 0 0 0.85  0 0 0 0 0.75  0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
+
+/* Subtle ruled-paper hairlines, set 1px slate so they read as engraving not lines */
+.hairline { border-color: var(--ink-hairline); }
+.hairline-soft { border-color: var(--ink-divider); }
+
+/* Display serif — Fraunces variable.
+   Important: do NOT set font-variation-settings on the base class, because
+   that implicitly resets the wght axis to default and breaks Tailwind's
+   font-bold / font-weight utilities. Let font-weight drive wght. Apply opsz
+   and SOFT/WONK overrides only on specific elements that need them. */
+.serif {
+  font-family: var(--font-display), ui-serif, Georgia, serif;
+  font-optical-sizing: auto;
+  letter-spacing: -0.02em;
+}
+.serif-italic {
+  font-family: var(--font-display), ui-serif, Georgia, serif;
+  font-style: italic;
+  font-optical-sizing: auto;
+  font-variation-settings: "SOFT" 80, "WONK" 1;
+  letter-spacing: -0.005em;
+}
+.serif-soft {
+  font-family: var(--font-display), ui-serif, Georgia, serif;
+  font-optical-sizing: auto;
+  font-variation-settings: "SOFT" 100, "WONK" 0;
+}
+
+/* Numbers get tabular figures by default — finance demands aligned columns */
+.font-mono, code, pre, .tabular {
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+
+/* Eyebrow label: tiny uppercase with generous tracking */
+.eyebrow {
+  font-family: var(--font-sans), ui-sans-serif, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--paper-fade);
+}
+
+/* Drop cap — for opening reason text, like a real publication */
+.dropcap::first-letter {
+  font-family: var(--font-display), serif;
+  font-weight: 700;
+  font-size: 2.6em;
+  float: left;
+  line-height: 0.85;
+  padding-right: 0.08em;
+  padding-top: 0.08em;
+  color: var(--amber);
+}
+
+/* Pilcrow ornament — section-start marker, common in editorial print */
+.pilcrow::before {
+  content: "¶";
+  font-family: var(--font-display), serif;
+  font-style: italic;
+  color: var(--amber);
+  margin-right: 0.5em;
+  font-weight: 500;
+}
+
+/* ─── Animations ─────────────────────────────────────────── */
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.animate-fade-in {
-  animation: fadeIn 0.35s ease-out both;
-}
+.animate-fade-in { animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
 @keyframes slideIn {
-  from { opacity: 0; transform: translateX(-6px); }
+  from { opacity: 0; transform: translateX(-4px); }
   to   { opacity: 1; transform: translateX(0); }
 }
-.animate-slide-in {
-  animation: slideIn 0.2s ease-out both;
+.animate-slide-in { animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Hairline draw — for section dividers that animate in */
+@keyframes drawHairline {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
 }
+.animate-draw {
+  animation: drawHairline 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: left center;
+}
+
+/* Subtle pulse for the amber accent on critical signals */
+@keyframes emberPulse {
+  0%, 100% { opacity: 0.85; }
+  50%      { opacity: 1; }
+}
+.animate-ember { animation: emberPulse 3s ease-in-out infinite; }
+
+/* Tabular bar fill — used by sub-score bars */
+@keyframes barFill {
+  from { width: 0; }
+}
+.animate-bar { animation: barFill 0.9s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Selection — warm amber instead of generic blue */
+::selection {
+  background: var(--amber-glow);
+  color: var(--paper);
+}
+
+/* Scrollbar — minimal slate */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--ink-divider);
+  border-radius: 0;
+  border: 3px solid var(--ink-bg);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--ink-hairline); }

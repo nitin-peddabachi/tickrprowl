@@ -2,12 +2,23 @@ import yfinance as yf
 import pandas as pd
 import ta
 import numpy as np
+from scipy.signal import find_peaks
 from app.services import cache as _cache
 from app.models.database import SessionLocal, ScoreHistory
 
 
-def calculate_dcf_value(stock: yf.Ticker, growth_rate: float = None, discount_rate: float = 0.10, terminal_growth: float = 0.025, projection_years: int = 5) -> float:
+def calculate_dcf_value(stock: yf.Ticker, growth_rate: float = None, discount_rate: float = 0.10, terminal_growth: float = 0.025, projection_years: int = 5, beta: float = None) -> float:
     try:
+        # Audit F7: beta-adjusted discount rate. A high-beta stock carries more
+        # systematic risk and deserves a higher discount; a low-beta utility deserves a lower one.
+        # Formula: risk-free (~4.5%) + beta * equity risk premium (~5.5%), clamped to [6%, 15%].
+        if beta is not None:
+            try:
+                beta_f = float(beta)
+                discount_rate = max(0.06, min(0.15, 0.045 + beta_f * 0.055))
+            except (TypeError, ValueError):
+                pass  # fall through to passed-in discount_rate default
+
         cashflow = stock.cashflow
         if cashflow.empty:
             return None
@@ -196,7 +207,10 @@ def _calculate_piotroski_fscore(stock: yf.Ticker) -> dict:
 def _detect_rsi_divergence(close: pd.Series) -> dict:
     """
     Detect bullish RSI divergence: price makes a lower low, but RSI makes a higher low.
-    Compares two 15-bar windows within the last 30 bars.
+    Uses scipy.signal.find_peaks on negated series to locate pivot lows (audit F9):
+    requires at least 5 bars between pivots, then compares the last two pivots within
+    a 60-bar lookback window. This is far more robust than the previous naive two-window
+    comparison, which could trigger on any localized dip.
     Returns detected bool and a human-readable description.
     """
     try:
@@ -205,28 +219,51 @@ def _detect_rsi_divergence(close: pd.Series) -> dict:
 
         rsi_series = ta.momentum.RSIIndicator(close, window=14).rsi()
 
-        recent_close = close.iloc[-15:]
-        prior_close = close.iloc[-30:-15]
-        recent_rsi = rsi_series.iloc[-15:]
-        prior_rsi = rsi_series.iloc[-30:-15]
+        # Window the analysis to the most recent 60 bars to focus on recent structure.
+        lookback = min(60, len(close))
+        close_win = close.iloc[-lookback:]
+        rsi_win = rsi_series.iloc[-lookback:]
 
-        recent_low_idx = recent_close.idxmin()
-        prior_low_idx = prior_close.idxmin()
+        # Drop initial NaNs from RSI warmup so find_peaks doesn't choke
+        valid_mask = rsi_win.notna()
+        close_win = close_win[valid_mask]
+        rsi_win = rsi_win[valid_mask]
 
-        recent_price_low = float(recent_close[recent_low_idx])
-        prior_price_low = float(prior_close[prior_low_idx])
-        recent_rsi_at_low = float(recent_rsi[recent_low_idx])
-        prior_rsi_at_low = float(prior_rsi[prior_low_idx])
-
-        if pd.isna(recent_rsi_at_low) or pd.isna(prior_rsi_at_low):
+        if len(close_win) < 15:
             return {"detected": False, "description": None}
 
-        if recent_price_low < prior_price_low and recent_rsi_at_low > prior_rsi_at_low:
+        # find_peaks finds maxima — negate to find minima (pivot lows).
+        # distance=5 enforces ≥5 bars between successive pivots.
+        price_arr = close_win.to_numpy(dtype=float)
+        rsi_arr = rsi_win.to_numpy(dtype=float)
+
+        price_pivot_idx, _ = find_peaks(-price_arr, distance=5)
+        rsi_pivot_idx, _ = find_peaks(-rsi_arr, distance=5)
+
+        if len(price_pivot_idx) < 2 or len(rsi_pivot_idx) < 2:
+            return {"detected": False, "description": None}
+
+        # Take the last two pivots from each series.
+        # "1st-most-recent" = latest pivot, "2nd-most-recent" = the one before that.
+        price_first_idx = price_pivot_idx[-1]
+        price_second_idx = price_pivot_idx[-2]
+        rsi_first_idx = rsi_pivot_idx[-1]
+        rsi_second_idx = rsi_pivot_idx[-2]
+
+        price_first = float(price_arr[price_first_idx])
+        price_second = float(price_arr[price_second_idx])
+        rsi_first = float(rsi_arr[rsi_first_idx])
+        rsi_second = float(rsi_arr[rsi_second_idx])
+
+        # Bullish divergence: most recent price pivot is LOWER than the prior one
+        # (price made a lower low), but most recent RSI pivot is HIGHER than the prior one
+        # (RSI made a higher low — momentum is exhausting).
+        if price_first < price_second and rsi_first > rsi_second:
             return {
                 "detected": True,
                 "description": (
-                    f"Price made lower low (${recent_price_low:.2f} vs ${prior_price_low:.2f}) "
-                    f"but RSI made higher low ({recent_rsi_at_low:.1f} vs {prior_rsi_at_low:.1f}) — "
+                    f"Price made lower low (${price_first:.2f} vs ${price_second:.2f}) "
+                    f"but RSI made higher low ({rsi_first:.1f} vs {rsi_second:.1f}) — "
                     "selling momentum is exhausting"
                 ),
             }
@@ -433,8 +470,24 @@ def get_stock_analysis(ticker: str) -> dict:
     try:
         rsi = ta.momentum.RSIIndicator(close).rsi().iloc[-1]
         macd = ta.trend.MACD(close)
-        macd_line = macd.macd().iloc[-1]
-        signal_line = macd.macd_signal().iloc[-1]
+        macd_line_series = macd.macd()
+        signal_line_series = macd.macd_signal()
+        macd_line = macd_line_series.iloc[-1]
+        signal_line = signal_line_series.iloc[-1]
+        # Previous bar values for event detection — real "crossover" requires a transition,
+        # not just current state (state alone would fire for weeks; see audit F1).
+        macd_prev = float(macd_line_series.iloc[-2]) if len(macd_line_series) >= 2 and not pd.isna(macd_line_series.iloc[-2]) else None
+        signal_prev = float(signal_line_series.iloc[-2]) if len(signal_line_series) >= 2 and not pd.isna(signal_line_series.iloc[-2]) else None
+        macd_crossover_event = bool(
+            macd_line is not None and signal_line is not None
+            and macd_prev is not None and signal_prev is not None
+            and macd_line > signal_line and macd_prev <= signal_prev
+        )
+        macd_bearish_event = bool(
+            macd_line is not None and signal_line is not None
+            and macd_prev is not None and signal_prev is not None
+            and macd_line < signal_line and macd_prev >= signal_prev
+        )
         bb = ta.volatility.BollingerBands(close)
         bb_percent = bb.bollinger_pband().iloc[-1]
 
@@ -447,13 +500,28 @@ def get_stock_analysis(ticker: str) -> dict:
         sma_200_series = ta.trend.SMAIndicator(close, window=200).sma_indicator()
         sma_50 = float(sma_50_series.iloc[-1]) if not pd.isna(sma_50_series.iloc[-1]) else None
         sma_200 = float(sma_200_series.iloc[-1]) if not pd.isna(sma_200_series.iloc[-1]) else None
+        sma_50_prev = float(sma_50_series.iloc[-2]) if len(sma_50_series) >= 2 and not pd.isna(sma_50_series.iloc[-2]) else None
+        sma_200_prev = float(sma_200_series.iloc[-2]) if len(sma_200_series) >= 2 and not pd.isna(sma_200_series.iloc[-2]) else None
+        # State: SMA50 above SMA200 (uptrend regime). Preserved for output payload + descriptive reasons.
         golden_cross = bool(sma_50 > sma_200) if (sma_50 is not None and sma_200 is not None) else None
+        # Event: the day SMA50 crosses above SMA200. Available for future event-based scoring.
+        golden_cross_event = bool(
+            sma_50 is not None and sma_200 is not None
+            and sma_50_prev is not None and sma_200_prev is not None
+            and sma_50 > sma_200 and sma_50_prev <= sma_200_prev
+        )
 
         # Volume trend — current volume vs 20-day average
         volume = hist["Volume"]
         vol_sma_20 = float(volume.rolling(window=20).mean().iloc[-1])
         current_volume = int(volume.iloc[-1])
         volume_ratio = round(current_volume / vol_sma_20, 2) if vol_sma_20 > 0 else None
+
+        # Average dollar volume over last 20 sessions — liquidity check for Strong Buy gating (audit F4)
+        try:
+            avg_dollar_volume = float((close * volume).tail(20).mean())
+        except Exception:
+            avg_dollar_volume = None
 
         # On-Balance Volume (OBV) — cumulative volume-weighted price direction
         obv_series = ta.volume.OnBalanceVolumeIndicator(close, volume).on_balance_volume()
@@ -514,8 +582,10 @@ def get_stock_analysis(ticker: str) -> dict:
     target_price_high = info.get("targetHighPrice")
     target_price_low = info.get("targetLowPrice")
 
-    # DCF Valuation
-    dcf_value = calculate_dcf_value(stock, growth_rate=revenue_growth)
+    # DCF Valuation — let DCF use its own historical-FCF CAGR (audit F3:
+    # revenue_growth ≠ FCF growth and was overriding the better signal).
+    # Discount rate is beta-adjusted per audit F7 (CAPM-style: rf + beta*ERP).
+    dcf_value = calculate_dcf_value(stock, beta=beta)
 
     # FCF Yield
     fcf_yield = _calculate_fcf_yield(stock, market_cap)
@@ -554,7 +624,9 @@ def get_stock_analysis(ticker: str) -> dict:
     rsi_divergence = _detect_rsi_divergence(close)
 
     # Oversold score (0-100, higher = more oversold)
-    oversold_score = _calculate_oversold_score(
+    # Audit F6: returns sub-scores by bucket. Composite is exposed as `oversold_score`
+    # for backward compat; sub-scores exposed under `subscores`.
+    score_breakdown = _calculate_oversold_score(
         rsi=rsi,
         bb_percent=bb_percent,
         pct_from_high=pct_from_high,
@@ -562,8 +634,7 @@ def get_stock_analysis(ticker: str) -> dict:
         forward_pe=forward_pe,
         debt_to_equity=debt_to_equity,
         revenue_growth=revenue_growth,
-        macd_line=macd_line,
-        signal_line=signal_line,
+        macd_crossover_event=macd_crossover_event,
         current_price=current_price,
         dcf_value=dcf_value,
         stoch_k=stoch_k,
@@ -575,6 +646,12 @@ def get_stock_analysis(ticker: str) -> dict:
         volume_ratio=volume_ratio,
         rsi_divergence_detected=rsi_divergence["detected"],
     )
+    oversold_score = score_breakdown["composite"]
+    subscores = {
+        "technical": score_breakdown["technical"],
+        "valuation": score_breakdown["valuation"],
+        "quality": score_breakdown["quality"],
+    }
 
     pct_from_low = round((current_price - price_52w_low) / price_52w_low * 100, 2) if price_52w_low else None
 
@@ -589,8 +666,8 @@ def get_stock_analysis(ticker: str) -> dict:
         revenue_growth=revenue_growth,
         dcf_value=dcf_value,
         current_price=current_price,
-        macd_line=macd_line,
-        signal_line=signal_line,
+        macd_crossover_event=macd_crossover_event,
+        macd_bearish_event=macd_bearish_event,
         piotroski_score=piotroski["score"],
         fcf_yield=fcf_yield,
         ev_to_ebitda=ev_to_ebitda,
@@ -605,6 +682,8 @@ def get_stock_analysis(ticker: str) -> dict:
         obv_trend=obv_trend,
         short_percent_of_float=short_percent_of_float,
         rsi_divergence=rsi_divergence,
+        market_cap=market_cap,
+        avg_dollar_volume=avg_dollar_volume,
     )
     signal = signal_result["signal"]
     signal_reasons = signal_result["signal_reasons"]
@@ -681,6 +760,7 @@ def get_stock_analysis(ticker: str) -> dict:
         "piotroski": piotroski,
         "quarterly_revenue_bn": quarterly_revenue,
         "oversold_score": oversold_score,
+        "subscores": subscores,
         "signal": signal,
         "signal_reasons": signal_reasons,
         "next_earnings_date": next_earnings_date,
@@ -698,116 +778,162 @@ def get_stock_analysis(ticker: str) -> dict:
 
 def _calculate_oversold_score(
     rsi, bb_percent, pct_from_high, pe_ratio, forward_pe,
-    debt_to_equity, revenue_growth, macd_line, signal_line,
+    debt_to_equity, revenue_growth, macd_crossover_event,
     current_price, dcf_value, stoch_k, ev_to_ebitda, fcf_yield,
     piotroski_score, sma_50=None, sma_200=None, volume_ratio=None,
     rsi_divergence_detected=False,
-) -> int:
-    score = 0
+) -> dict:
+    """
+    Audit F6 + F8: bucket the composite oversold score into three sub-scores so the
+    UI can show users *why* a stock scores well (technical vs valuation vs quality)
+    and so a single dimension (e.g. Piotroski) can't compound across buckets.
 
-    # RSI (max 40 pts) — below 30 is oversold
+    Returns {"technical": 0-40, "valuation": 0-40, "quality": 0-20, "composite": 0-100}.
+    Each bucket is independently capped; composite = sum, then clamped to 0-100.
+    """
+
+    # ── TECHNICAL (cap 40) ───────────────────────────────────────────────────
+    technical = 0
+
+    # RSI tiers — below 30 is oversold. RSI < 50 tier removed (audit F13):
+    # half of all stocks have RSI < 50 at any given time.
     if rsi < 30:
-        score += 40
+        technical += 40
     elif rsi < 40:
-        score += 25
-    elif rsi < 50:
-        score += 10
+        technical += 25
 
-    # Stochastic %K (max 15 pts) — below 20 is oversold
+    # Stochastic %K tiers — below 20 is oversold
     if stoch_k < 20:
-        score += 15
+        technical += 15
     elif stoch_k < 30:
-        score += 8
+        technical += 8
 
-    # Dual confirmation bonus: both RSI and Stochastic oversold (+10 pts)
+    # Dual confirmation bonus: both RSI and Stochastic oversold
     if rsi < 30 and stoch_k < 20:
-        score += 10
+        technical += 10
 
-    # Bollinger Band position (max 20 pts) — near lower band = oversold
+    # Bollinger Band position — near lower band = oversold
     if bb_percent < 0.1:
-        score += 20
+        technical += 20
     elif bb_percent < 0.2:
-        score += 10
+        technical += 10
 
-    # Distance from 52-week high (max 20 pts)
-    if pct_from_high is not None:
+    # MACD bullish crossover event bonus — fires only on the day the line crosses signal,
+    # not while the state persists (audit F1).
+    if macd_crossover_event:
+        technical += 5
+
+    # Distance from 52-week high — guarded by a valuation check (audit F5):
+    # only credit "deep pullback" points when the stock is also cheap on P/E or EV/EBITDA.
+    valuation_cheap = (
+        (pe_ratio is not None and pe_ratio < 20)
+        or (ev_to_ebitda is not None and 0 < ev_to_ebitda < 12)
+    )
+    if pct_from_high is not None and valuation_cheap:
         if pct_from_high < -40:
-            score += 20
+            technical += 20
         elif pct_from_high < -25:
-            score += 12
+            technical += 12
         elif pct_from_high < -15:
-            score += 5
-
-    # SMA signals — price below moving average = bearish pressure / more oversold
-    if sma_50 is not None and current_price < sma_50:
-        score += 5
-    if sma_200 is not None and current_price < sma_200:
-        score += 5
+            technical += 5
 
     # Volume confirmation — high volume on a selloff confirms genuine oversold pressure
     if volume_ratio is not None and volume_ratio > 1.5:
-        score += 5
+        technical += 5
 
-    # Fundamentals bonus — strong fundamentals = good oversold buy
-    if revenue_growth and revenue_growth > 0.05:
-        score += 10
+    # RSI bullish divergence — selling momentum exhausting while price still falling
+    if rsi_divergence_detected and rsi < 45:
+        technical += 8
+
+    # SMA signals — price below moving average = bearish pressure / more oversold
+    if sma_50 is not None and current_price < sma_50:
+        technical += 5
+    if sma_200 is not None and current_price < sma_200:
+        technical += 5
+
+    technical = min(max(technical, 0), 40)
+
+    # ── VALUATION (cap 40) ───────────────────────────────────────────────────
+    valuation = 0
+
+    # P/E tiers (use trailing first, fall back to forward)
     if pe_ratio and pe_ratio < 15:
-        score += 10
+        valuation += 10
     elif forward_pe and forward_pe < 15:
-        score += 7
+        valuation += 7
 
-    # EV/EBITDA (max 10 pts)
+    # EV/EBITDA
     if ev_to_ebitda is not None and ev_to_ebitda > 0:
         if ev_to_ebitda < 8:
-            score += 10
+            valuation += 10
         elif ev_to_ebitda < 12:
-            score += 5
+            valuation += 5
 
-    # FCF Yield (max 10 pts)
+    # FCF Yield
     if fcf_yield is not None:
         if fcf_yield > 8:
-            score += 10
+            valuation += 10
         elif fcf_yield > 5:
-            score += 5
+            valuation += 5
 
-    # DCF undervaluation bonus (max 20 pts)
+    # DCF undervaluation bonus
     if dcf_value and current_price < dcf_value:
         undervaluation_pct = (dcf_value - current_price) / dcf_value
         if undervaluation_pct > 0.5:
-            score += 20
+            valuation += 20
         elif undervaluation_pct > 0.3:
-            score += 15
+            valuation += 15
         elif undervaluation_pct > 0.2:
-            score += 10
+            valuation += 10
         elif undervaluation_pct > 0.1:
-            score += 5
+            valuation += 5
 
-    # MACD bullish crossover bonus (+5 pts)
-    if macd_line is not None and signal_line is not None and macd_line > signal_line:
-        score += 5
+    valuation = min(max(valuation, 0), 40)
 
-    # RSI bullish divergence (+8 pts) — selling momentum exhausting while price still falling
-    if rsi_divergence_detected and rsi < 45:
-        score += 8
+    # ── QUALITY (cap 20) ─────────────────────────────────────────────────────
+    quality = 0
 
-    # Piotroski F-Score adjustment
+    # Piotroski F-Score adjustment — audit F8: this is the ONLY place Piotroski
+    # influences the composite. It used to also add/subtract in the flat score above,
+    # which double-counted balance-sheet health across buckets.
     if piotroski_score is not None:
         if piotroski_score >= 7:
-            score += 10
+            quality += 10
         elif piotroski_score <= 2:
-            score -= 15
+            quality -= 15
 
     # Debt penalty — high leverage makes oversold stocks dangerous
     # D/E is reported as a percentage by yfinance (e.g. 150 = 1.5x)
     if debt_to_equity is not None:
         if debt_to_equity > 300:
-            score -= 20
+            quality -= 20
         elif debt_to_equity > 200:
-            score -= 10
+            quality -= 10
         elif debt_to_equity > 150:
-            score -= 5
+            quality -= 5
 
-    return min(max(score, 0), 100)
+    # Revenue growth bonus — modest credit for 5%+ top-line expansion
+    if revenue_growth and revenue_growth > 0.05:
+        quality += 5
+
+    quality = min(max(quality, 0), 20)
+
+    composite = min(max(technical + valuation + quality, 0), 100)
+
+    return {
+        "technical": int(technical),
+        "valuation": int(valuation),
+        "quality": int(quality),
+        "composite": int(composite),
+    }
+
+
+def _check_liquidity(market_cap, avg_dollar_volume) -> bool:
+    # Audit F4: Strong Buy requires institutional-grade liquidity to avoid surfacing
+    # illiquid micro-caps where price moves are easily manipulated and execution is unreliable.
+    if market_cap is None or avg_dollar_volume is None:
+        return False
+    return market_cap >= 300_000_000 and avg_dollar_volume >= 1_000_000
 
 
 def _check_absolute_steal(rsi, oversold_score, pe_ratio, revenue_growth, debt_to_equity, current_price, dcf_value, piotroski_score) -> dict:
@@ -845,12 +971,12 @@ def _check_overbought(rsi, bb_percent, pct_from_low, pe_ratio, stoch_k) -> dict:
 def _get_signal(
     oversold_score: int, rsi: float, bb_percent: float, stoch_k: float,
     pct_from_high: float, pe_ratio, forward_pe, revenue_growth,
-    dcf_value, current_price, macd_line, signal_line,
+    dcf_value, current_price, macd_crossover_event, macd_bearish_event,
     piotroski_score, fcf_yield, ev_to_ebitda, peg_ratio=None,
     golden_cross=None, sma_50=None, sma_200=None,
     analyst_rating=None, analyst_count=None, target_price_mean=None,
     volume_ratio=None, obv_trend=None, short_percent_of_float=None,
-    rsi_divergence=None,
+    rsi_divergence=None, market_cap=None, avg_dollar_volume=None,
 ) -> dict:
     reasons = []
 
@@ -873,7 +999,7 @@ def _get_signal(
             reasons.append("Price pressing the upper Bollinger Band")
         if pe_ratio and pe_ratio > 35:
             reasons.append(f"P/E of {pe_ratio:.1f} — historically expensive valuation")
-        if macd_line is not None and signal_line is not None and macd_line < signal_line:
+        if macd_bearish_event:
             reasons.append("MACD bearish crossover — momentum weakening")
         if analyst_rating is not None and analyst_rating >= 4.0 and analyst_count:
             reasons.append(f"Analyst consensus bearish ({analyst_count} analysts)")
@@ -894,7 +1020,7 @@ def _get_signal(
             upside = (target_price_mean - current_price) / current_price * 100
             reasons.append(f"Trading {abs(upside):.0f}% above analyst mean target (${target_price_mean:.2f})")
 
-    elif oversold_score >= 70:
+    elif oversold_score >= 70 and _check_liquidity(market_cap, avg_dollar_volume):
         signal = "Strong Buy"
         if rsi < 30:
             reasons.append(f"RSI at {rsi:.1f} — deeply oversold")
@@ -923,7 +1049,7 @@ def _get_signal(
             reasons.append(f"Piotroski F-Score {piotroski_score}/9 — financially healthy company")
         if fcf_yield and fcf_yield > 5:
             reasons.append(f"FCF Yield of {fcf_yield:.1f}% — strong free cash generation")
-        if macd_line is not None and signal_line is not None and macd_line > signal_line:
+        if macd_crossover_event:
             reasons.append("MACD bullish crossover — momentum turning positive")
         if volume_ratio is not None and volume_ratio > 1.5:
             reasons.append(f"Volume {volume_ratio:.1f}× average — high-volume selloff confirms genuine oversold pressure")

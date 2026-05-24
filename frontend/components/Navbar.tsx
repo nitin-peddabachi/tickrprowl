@@ -29,33 +29,36 @@ export default function Navbar() {
   }, [isSignedIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const links = [
-    { href: "/", label: "Search" },
-    { href: "/scanner", label: "Scanner" },
+    { href: "/",          label: "Search"    },
+    { href: "/scanner",   label: "Scanner"   },
     { href: "/watchlist", label: "Watchlist" },
     { href: "/portfolio", label: "Portfolio" },
-    { href: "/alerts", label: "Alerts" },
+    { href: "/alerts",    label: "Alerts"    },
   ];
 
   if (pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) return null;
 
   return (
-    <nav className="bg-gray-900/80 backdrop-blur-md border-b border-gray-800 px-8 py-0 sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 py-4">
-          <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <polyline points="1,10 4,6 7,8 10,3 13,5" stroke="#10b981" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
-          <span className="text-white font-bold text-lg tracking-tight">
-            Tickr<span className="text-emerald-400">Prowl</span>
+    <nav className="relative bg-[var(--ink-bg)] border-b border-[var(--ink-hairline)] sticky top-0 z-50">
+      {/* Thin amber accent rule under the masthead */}
+      <span aria-hidden className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[var(--amber-dim)]/40 to-transparent" />
+
+      <div className="max-w-6xl mx-auto px-8 flex items-center justify-between">
+        {/* ── Masthead ─────────────────────────────────────────────── */}
+        <Link href="/" className="flex items-baseline gap-3 py-5 group">
+          <span className="serif font-bold text-[var(--paper)] text-2xl tracking-tight leading-none group-hover:text-[var(--amber)] transition-colors">
+            Tickr<span className="serif-italic text-[var(--amber)]">prowl</span>
           </span>
-          <span className="text-gray-600 text-xs font-mono">v1.1.0</span>
+          <span className="text-[var(--paper-vapor)] text-[10px] font-mono uppercase tracking-[0.2em] tabular hidden sm:inline">
+            № 1.1
+          </span>
+          <span className="hidden md:inline text-[var(--paper-vapor)] text-[10px] serif italic">
+            an equity brief
+          </span>
         </Link>
 
-        <div className="flex items-center gap-4">
-          {/* Nav links */}
+        <div className="flex items-center gap-6">
+          {/* ── Nav links — small caps, hairline underscore on active ── */}
           <div className="flex items-center">
             {links.map((link) => {
               const active = pathname === link.href;
@@ -63,31 +66,33 @@ export default function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`relative px-4 py-4 text-sm font-medium transition-colors ${
-                    active ? "text-white" : "text-gray-400 hover:text-gray-200"
+                  className={`relative px-4 py-5 text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors ${
+                    active
+                      ? "text-[var(--amber)]"
+                      : "text-[var(--paper-fade)] hover:text-[var(--paper-dim)]"
                   }`}
                 >
                   {link.label}
                   {link.href === "/alerts" && unread > 0 && (
-                    <span className="absolute top-2.5 right-1 bg-emerald-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center font-bold leading-none">
+                    <span className="absolute top-3 -right-0.5 bg-[var(--amber)] text-[var(--ink-bg)] text-[9px] font-mono font-bold w-4 h-4 flex items-center justify-center leading-none tabular">
                       {unread > 9 ? "9+" : unread}
                     </span>
                   )}
                   {active && (
-                    <span className="absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-emerald-400" />
+                    <span className="absolute bottom-3 left-3 right-3 h-px bg-[var(--amber)]" />
                   )}
                 </Link>
               );
             })}
           </div>
 
-          {/* Auth */}
+          {/* ── Auth ─────────────────────────────────────────────── */}
           <Show when="signed-in">
             <UserButton />
           </Show>
           <Show when="signed-out">
             <SignInButton mode="modal">
-              <button className="text-sm px-4 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition-colors">
+              <button className="text-[11px] uppercase tracking-[0.18em] px-4 py-1.5 border border-[var(--amber)] text-[var(--amber)] hover:bg-[var(--amber)] hover:text-[var(--ink-bg)] font-semibold transition-colors">
                 Sign in
               </button>
             </SignInButton>

@@ -32,41 +32,46 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-transparent text-white">
-      {/* Hero */}
-      <div className="relative">
-        {/* Background glow */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-emerald-500/5 rounded-full blur-3xl" />
-        </div>
-
-        <div className="relative max-w-6xl mx-auto px-8 pt-16 pb-10">
-          <div className="mb-8 text-center">
-            <h1 className="text-5xl font-extrabold mb-3 tracking-tight">
-              <span className="text-white">Find </span>
-              <span className="bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
-                oversold stocks
-              </span>
-              <span className="text-white"> worth buying</span>
-            </h1>
-            <p className="text-gray-400 text-lg max-w-xl mx-auto">
-              RSI, Bollinger Bands, DCF, Piotroski F-Score, and analyst consensus — all in one place.
-            </p>
+    <main className="min-h-screen bg-[var(--ink-bg)] text-[var(--paper)]">
+      {/* ── Hero — editorial cover treatment ─────────────────────────── */}
+      <section className="relative border-b border-[var(--ink-hairline)]">
+        <div className="relative max-w-5xl mx-auto px-8 pt-20 pb-16">
+          {/* Eyebrow — issue/date masthead-style */}
+          <div className="eyebrow mb-8 flex items-center gap-3 max-w-2xl mx-auto">
+            <span className="h-px flex-1 bg-[var(--ink-divider)]" />
+            <span>Vol. 1 · Issue 1</span>
+            <span className="text-[var(--paper-vapor)]">·</span>
+            <span className="font-mono normal-case tracking-wide">An equity brief</span>
+            <span className="h-px flex-1 bg-[var(--ink-divider)]" />
           </div>
+
+          <h1 className="serif font-bold text-center text-[var(--paper)] tracking-tight leading-[0.95] text-[clamp(2.75rem,7vw,5rem)] mb-6">
+            Find <span className="serif italic text-[var(--amber)] font-light">oversold</span> stocks
+            <br />
+            worth buying.
+          </h1>
+
+          <p className="text-center max-w-xl mx-auto text-[var(--paper-dim)] text-base leading-relaxed mb-12">
+            <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--paper-fade)] block mb-2">An analyst's toolkit</span>
+            RSI, Bollinger Bands, DCF, Piotroski F-Score, and analyst consensus —
+            composed into one editorial brief.
+          </p>
 
           <div className="relative z-20 max-w-2xl mx-auto">
             <SearchBar onSearch={analyzeStock} loading={loading} />
 
-            {/* Quick picks */}
+            {/* Quick picks — mono chips with hairline borders */}
             {stocks.length === 0 && (
-              <div className="mt-4 flex items-center gap-2 flex-wrap justify-center">
-                <span className="text-xs text-gray-600 uppercase tracking-wider">Try:</span>
-                {QUICK_PICKS.map((t) => (
+              <div className="mt-6 flex items-center gap-3 flex-wrap justify-center">
+                <span className="eyebrow">Specimens</span>
+                <span className="text-[var(--paper-vapor)]">·</span>
+                {QUICK_PICKS.map((t, i) => (
                   <button
                     key={t}
                     onClick={() => analyzeStock(t)}
                     disabled={loading}
-                    className="text-xs px-3 py-1 rounded-full border border-gray-700 text-gray-400 hover:border-emerald-500/60 hover:text-emerald-400 hover:bg-emerald-500/5 transition-all disabled:opacity-40"
+                    className="font-mono text-[11px] tabular tracking-tight px-2.5 py-1 border border-[var(--ink-hairline)] text-[var(--paper-fade)] hover:border-[var(--amber)] hover:text-[var(--amber)] hover:bg-[var(--amber-glow)] transition-all disabled:opacity-30"
+                    style={{ animationDelay: `${i * 30}ms` }}
                   >
                     {t}
                   </button>
@@ -75,36 +80,48 @@ export default function Home() {
             )}
           </div>
 
-          {error && <p className="mt-4 text-red-400 text-sm text-center">{error}</p>}
+          {error && (
+            <p className="mt-6 text-center text-[var(--sell)] text-sm font-mono">
+              <span className="eyebrow text-[var(--sell)] mr-2">Error</span>
+              {error}
+            </p>
+          )}
         </div>
-      </div>
+      </section>
 
-      {/* Results */}
-      <div className="relative z-0 max-w-6xl mx-auto px-8 pb-16">
-        {/* Loading skeleton */}
+      {/* ── Results ───────────────────────────────────────────────────── */}
+      <section className="relative z-0 max-w-5xl mx-auto px-8 py-12">
+        {/* Loading skeleton — matches new card aesthetic */}
         {loading && (
-          <div className="animate-pulse bg-gray-900 border border-gray-800 rounded-xl p-6 mb-6">
-            <div className="flex justify-between mb-6">
+          <div className="animate-pulse relative bg-[var(--ink-surface)] border border-[var(--ink-hairline)] p-8 mb-6">
+            <span aria-hidden className="absolute top-0 left-0 w-2.5 h-2.5 border-t border-l border-[var(--amber-dim)]" />
+            <span aria-hidden className="absolute top-0 right-0 w-2.5 h-2.5 border-t border-r border-[var(--amber-dim)]" />
+            <span aria-hidden className="absolute bottom-0 left-0 w-2.5 h-2.5 border-b border-l border-[var(--amber-dim)]" />
+            <span aria-hidden className="absolute bottom-0 right-0 w-2.5 h-2.5 border-b border-r border-[var(--amber-dim)]" />
+            <div className="eyebrow mb-6">Setting type for {loadingTicker}</div>
+            <div className="flex justify-between mb-8">
               <div>
-                <div className="h-7 w-16 bg-gray-800 rounded mb-2" />
-                <div className="h-4 w-40 bg-gray-800 rounded" />
+                <div className="h-12 w-32 bg-[var(--ink-divider)] mb-3" />
+                <div className="h-3 w-40 bg-[var(--ink-divider)]" />
               </div>
               <div className="text-right">
-                <div className="h-6 w-24 bg-gray-800 rounded mb-2 ml-auto" />
-                <div className="h-8 w-20 bg-gray-800 rounded ml-auto" />
+                <div className="h-10 w-32 bg-[var(--ink-divider)] mb-2 ml-auto" />
+                <div className="h-3 w-20 bg-[var(--ink-divider)] ml-auto" />
               </div>
             </div>
-            <div className="h-2 bg-gray-800 rounded-full mb-6" />
-            <div className="grid grid-cols-2 gap-6">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="h-4 bg-gray-800 rounded" />
+            <div className="h-20 w-40 bg-[var(--ink-divider)] mb-6" />
+            <div className="grid grid-cols-3 gap-6">
+              {[...Array(3)].map((_, i) => (
+                <div key={i}>
+                  <div className="h-2 w-16 bg-[var(--ink-divider)] mb-2" />
+                  <div className="h-px bg-[var(--ink-divider)]" />
+                </div>
               ))}
             </div>
-            <p className="text-center text-gray-600 text-sm mt-4">Analyzing {loadingTicker}…</p>
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 gap-8">
           {stocks.map((stock, i) => (
             <div key={stock.ticker} className="animate-fade-in" style={{ animationDelay: `${i * 60}ms` }}>
               <StockCard stock={stock} />
@@ -112,18 +129,26 @@ export default function Home() {
           ))}
         </div>
 
+        {/* Empty state — editorial, italic Fraunces */}
         {stocks.length === 0 && !loading && (
-          <div className="mt-16 text-center text-gray-700">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-900 border border-gray-800 mb-4">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="1.5">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-              </svg>
-            </div>
-            <p className="text-lg font-medium text-gray-600">Search a stock to get started</p>
-            <p className="text-sm mt-1 text-gray-700">Try AAPL, NVDA, or any ticker above</p>
+          <div className="mt-20 text-center">
+            <p className="serif italic text-2xl text-[var(--paper-fade)] mb-3">
+              The press is ready.
+            </p>
+            <p className="text-sm text-[var(--paper-vapor)] font-mono uppercase tracking-[0.18em]">
+              Set a ticker to begin
+            </p>
           </div>
         )}
-      </div>
+      </section>
+
+      {/* ── Footer colophon ───────────────────────────────────────────── */}
+      <footer className="border-t border-[var(--ink-hairline)] py-6">
+        <div className="max-w-5xl mx-auto px-8 flex items-center justify-between text-[10px] uppercase tracking-[0.22em] font-mono text-[var(--paper-vapor)]">
+          <span>Tickrprowl · {new Date().getFullYear()}</span>
+          <span>Set in Fraunces &amp; IBM Plex</span>
+        </div>
+      </footer>
     </main>
   );
 }

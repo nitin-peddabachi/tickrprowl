@@ -104,39 +104,34 @@ export default function AlertsPage() {
   const selectedType = ALERT_TYPES.find((t) => t.value === alertType);
 
   return (
-    <main className="min-h-screen bg-transparent text-white p-8">
+    <main className="min-h-screen bg-transparent text-[var(--paper)] p-8">
       <div className="max-w-4xl mx-auto">
-        <div className="relative mb-8">
-          <div className="absolute -top-6 left-0 w-72 h-28 bg-emerald-500/8 rounded-full blur-3xl pointer-events-none" />
-          <div className="relative">
-            <h1 className="text-4xl font-extrabold mb-1 tracking-tight bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
-              Alerts
-            </h1>
-            <p className="text-gray-400">Get notified when stocks hit your conditions</p>
-          </div>
+        <div className="mb-8">
+          <h1 className="serif font-bold text-[var(--paper)] text-4xl tracking-tight mb-1">Alerts</h1>
+          <p className="text-[var(--paper-fade)]">Get notified when stocks hit your conditions</p>
         </div>
 
         {/* Create Alert */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-8">
-          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Create Alert</h2>
+        <div className="bg-[var(--ink-surface)] border border-[var(--ink-hairline)] rounded-none p-6 mb-8">
+          <h2 className="text-sm font-semibold text-[var(--paper-fade)] uppercase tracking-wider mb-4">Create Alert</h2>
           <form onSubmit={createAlert} className="space-y-4">
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Ticker</label>
+                <label className="text-xs text-[var(--paper-fade)] mb-1 block">Ticker</label>
                 <input
                   value={ticker}
                   onChange={(e) => setTicker(e.target.value.toUpperCase())}
                   placeholder="e.g. AAPL"
                   maxLength={10}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 text-sm"
+                  className="w-full bg-[var(--ink-raised)] border border-[var(--ink-hairline)] rounded-none px-3 py-2.5 text-[var(--paper)] placeholder-[var(--paper-vapor)] focus:outline-none focus:border-[var(--amber)] text-sm"
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Condition</label>
+                <label className="text-xs text-[var(--paper-fade)] mb-1 block">Condition</label>
                 <select
                   value={alertType}
                   onChange={(e) => setAlertType(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm"
+                  className="w-full bg-[var(--ink-raised)] border border-[var(--ink-hairline)] rounded-none px-3 py-2.5 text-[var(--paper)] focus:outline-none focus:border-[var(--amber)] text-sm"
                 >
                   {ALERT_TYPES.map((t) => (
                     <option key={t.value} value={t.value}>{t.label}</option>
@@ -144,29 +139,29 @@ export default function AlertsPage() {
                 </select>
               </div>
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Threshold</label>
+                <label className="text-xs text-[var(--paper-fade)] mb-1 block">Threshold</label>
                 <input
                   type="number"
                   value={threshold}
                   onChange={(e) => setThreshold(e.target.value)}
                   placeholder={selectedType?.placeholder}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 text-sm"
+                  className="w-full bg-[var(--ink-raised)] border border-[var(--ink-hairline)] rounded-none px-3 py-2.5 text-[var(--paper)] placeholder-[var(--paper-vapor)] focus:outline-none focus:border-[var(--amber)] text-sm"
                 />
               </div>
             </div>
             {selectedType && (
-              <p className="text-xs text-gray-600">{selectedType.hint}</p>
+              <p className="text-xs text-[var(--paper-vapor)]">{selectedType.hint}</p>
             )}
             <div className="flex items-center gap-3">
               <button
                 type="submit"
                 disabled={creating || !ticker || !threshold}
-                className="bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-900 text-white font-semibold px-5 py-2 rounded-lg text-sm transition-colors"
+                className="bg-[var(--amber)] hover:opacity-90 disabled:opacity-40 text-[var(--ink-bg)] font-semibold px-5 py-2 rounded-none text-sm transition-opacity"
               >
                 {creating ? "Creating..." : "Create Alert"}
               </button>
-              {success && <p className="text-emerald-400 text-sm">{success}</p>}
-              {error && <p className="text-red-400 text-sm">{error}</p>}
+              {success && <p className="text-[var(--buy)] text-sm">{success}</p>}
+              {error && <p className="text-[var(--sell)] text-sm">{error}</p>}
             </div>
           </form>
         </div>
@@ -174,51 +169,51 @@ export default function AlertsPage() {
         {/* Active Alerts */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
+            <h2 className="text-sm font-semibold text-[var(--paper-fade)] uppercase tracking-wider">
               Active Alerts ({alerts.length})
             </h2>
             <button
               onClick={checkNow}
               disabled={checking}
-              className="text-xs text-gray-400 hover:text-emerald-400 border border-gray-700 hover:border-emerald-600 px-3 py-1.5 rounded-lg transition-colors"
+              className="text-xs text-[var(--paper-fade)] hover:text-[var(--amber)] border border-[var(--ink-hairline)] hover:border-[var(--amber)] px-3 py-1.5 rounded-none transition-colors"
             >
               {checking ? "Checking..." : "Check Now"}
             </button>
           </div>
 
           {alerts.length === 0 ? (
-            <p className="text-gray-600 text-sm">No alerts set. Create one above.</p>
+            <p className="text-[var(--paper-vapor)] text-sm">No alerts set. Create one above.</p>
           ) : (
             <div className="space-y-2">
               {alerts.map((alert) => (
                 <div
                   key={alert.id}
-                  className={`flex items-center justify-between bg-gray-900 border rounded-xl px-5 py-4 ${
-                    alert.is_active ? "border-gray-800" : "border-gray-900 opacity-50"
+                  className={`flex items-center justify-between bg-[var(--ink-surface)] border rounded-none px-5 py-4 ${
+                    alert.is_active ? "border-[var(--ink-hairline)]" : "border-[var(--ink-divider)] opacity-50"
                   }`}
                 >
                   <div className="flex items-center gap-4">
-                    <div className={`w-2 h-2 rounded-full ${alert.is_active ? "bg-emerald-500" : "bg-gray-600"}`} />
+                    <div className={`w-2 h-2 rounded-full ${alert.is_active ? "bg-[var(--amber)]" : "bg-[var(--paper-vapor)]"}`} />
                     <div>
-                      <span onClick={() => setSelectedTicker(alert.ticker)} className="font-bold text-white hover:text-emerald-400 cursor-pointer transition-colors">{alert.ticker}</span>
-                      <span className="text-gray-400 text-sm ml-2">
+                      <span onClick={() => setSelectedTicker(alert.ticker)} className="font-bold text-[var(--paper)] hover:text-[var(--amber)] cursor-pointer transition-colors">{alert.ticker}</span>
+                      <span className="text-[var(--paper-fade)] text-sm ml-2">
                         {TYPE_LABELS[alert.alert_type]} {alert.threshold}
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-gray-600">
+                  <div className="flex items-center gap-4 text-xs text-[var(--paper-vapor)]">
                     {alert.last_triggered && (
                       <span>Last triggered: {alert.last_triggered.slice(0, 10)}</span>
                     )}
                     <button
                       onClick={() => toggleAlert(alert.id)}
-                      className="text-gray-400 hover:text-yellow-400 transition-colors"
+                      className="text-[var(--paper-fade)] hover:text-[var(--warn)] transition-colors"
                     >
                       {alert.is_active ? "Pause" : "Resume"}
                     </button>
                     <button
                       onClick={() => deleteAlert(alert.id)}
-                      className="text-gray-600 hover:text-red-400 transition-colors"
+                      className="text-[var(--paper-vapor)] hover:text-[var(--sell)] transition-colors"
                     >
                       Delete
                     </button>
@@ -232,13 +227,13 @@ export default function AlertsPage() {
         {/* Notifications */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
-              Notifications {unreadCount > 0 && <span className="ml-2 bg-emerald-500 text-white text-xs px-2 py-0.5 rounded-full">{unreadCount} new</span>}
+            <h2 className="text-sm font-semibold text-[var(--paper-fade)] uppercase tracking-wider">
+              Notifications {unreadCount > 0 && <span className="ml-2 bg-[var(--amber)] text-[var(--ink-bg)] text-xs px-2 py-0.5 rounded-none">{unreadCount} new</span>}
             </h2>
             {unreadCount > 0 && (
               <button
                 onClick={markAllRead}
-                className="text-xs text-gray-500 hover:text-white transition-colors"
+                className="text-xs text-[var(--paper-vapor)] hover:text-[var(--paper)] transition-colors"
               >
                 Mark all read
               </button>
@@ -246,25 +241,25 @@ export default function AlertsPage() {
           </div>
 
           {notifications.length === 0 ? (
-            <p className="text-gray-600 text-sm">No notifications yet. Alerts check automatically in the background.</p>
+            <p className="text-[var(--paper-vapor)] text-sm">No notifications yet. Alerts check automatically in the background.</p>
           ) : (
             <div className="space-y-2">
               {notifications.map((n) => (
                 <div
                   key={n.id}
-                  className={`flex items-start gap-4 rounded-xl px-5 py-4 border ${
+                  className={`flex items-start gap-4 rounded-none px-5 py-4 border ${
                     n.is_read
-                      ? "bg-gray-900 border-gray-800 opacity-60"
-                      : "bg-emerald-500/5 border-emerald-500/20"
+                      ? "bg-[var(--ink-surface)] border-[var(--ink-hairline)] opacity-60"
+                      : "bg-[var(--amber-glow)] border-[var(--amber)]/20"
                   }`}
                 >
-                  <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${n.is_read ? "bg-gray-700" : "bg-emerald-500"}`} />
+                  <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${n.is_read ? "bg-[var(--ink-divider)]" : "bg-[var(--amber)]"}`} />
                   <div className="flex-1">
-                    <p className="text-white text-sm">
-                      <span onClick={() => setSelectedTicker(n.ticker)} className="font-bold hover:text-emerald-400 cursor-pointer transition-colors">{n.ticker}</span>
+                    <p className="text-[var(--paper)] text-sm">
+                      <span onClick={() => setSelectedTicker(n.ticker)} className="font-bold hover:text-[var(--amber)] cursor-pointer transition-colors">{n.ticker}</span>
                       {(n.message ?? "").replace(n.ticker, "")}
                     </p>
-                    <p className="text-gray-600 text-xs mt-1">{n.triggered_at?.slice(0, 16).replace("T", " ")}</p>
+                    <p className="text-[var(--paper-vapor)] text-xs mt-1">{n.triggered_at?.slice(0, 16).replace("T", " ")}</p>
                   </div>
                 </div>
               ))}

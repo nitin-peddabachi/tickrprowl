@@ -30,15 +30,15 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   const d = payload[0]?.payload;
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-xs space-y-1">
-      <p className="text-gray-400 mb-1">{label}</p>
-      <p className="text-white">Close: <span className="font-semibold">${d?.close}</span></p>
-      <p className="text-gray-300">Open: ${d?.open} · High: ${d?.high} · Low: ${d?.low}</p>
+    <div className="bg-[var(--ink-raised)] border border-[var(--ink-hairline)] rounded-none p-3 text-xs space-y-1">
+      <p className="text-[var(--paper-fade)] mb-1">{label}</p>
+      <p className="text-[var(--paper)]">Close: <span className="font-semibold">${d?.close}</span></p>
+      <p className="text-[var(--paper-fade)]">Open: ${d?.open} · High: ${d?.high} · Low: ${d?.low}</p>
       {d?.bb_upper && (
         <p className="text-purple-400">BB: ${d?.bb_lower} – ${d?.bb_upper}</p>
       )}
       {d?.rsi != null && (
-        <p className={d?.rsi < 30 ? "text-emerald-400" : d?.rsi > 70 ? "text-red-400" : "text-gray-300"}>
+        <p className={d?.rsi < 30 ? "text-[var(--buy)]" : d?.rsi > 70 ? "text-[var(--sell)]" : "text-[var(--paper-fade)]"}>
           RSI: {d?.rsi}
         </p>
       )}
@@ -70,13 +70,18 @@ export default function PriceChart({ ticker }: Props) {
   const priceChange = firstClose ? ((lastClose - firstClose) / firstClose) * 100 : 0;
   const isPositive = priceChange >= 0;
 
+  // Use CSS variable values for chart strokes — passed as strings Recharts can use
+  const buyColor = "var(--buy)";
+  const sellColor = "var(--sell)";
+  const priceLineColor = isPositive ? buyColor : sellColor;
+
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Price History</h3>
+          <h3 className="text-sm font-semibold text-[var(--paper-fade)] uppercase tracking-wider">Price History</h3>
           {data.length > 0 && (
-            <span className={`text-xs font-medium mt-0.5 ${isPositive ? "text-emerald-400" : "text-red-400"}`}>
+            <span className={`text-xs font-medium mt-0.5 ${isPositive ? "text-[var(--buy)]" : "text-[var(--sell)]"}`}>
               {isPositive ? "+" : ""}{priceChange.toFixed(2)}% this period
             </span>
           )}
@@ -86,10 +91,10 @@ export default function PriceChart({ ticker }: Props) {
             <button
               key={p.value}
               onClick={() => setPeriod(p.value)}
-              className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+              className={`px-3 py-1 rounded-none text-xs font-medium transition-colors ${
                 period === p.value
-                  ? "bg-emerald-500 text-white"
-                  : "text-gray-400 hover:text-white"
+                  ? "bg-[var(--amber)] text-[var(--ink-bg)]"
+                  : "text-[var(--paper-fade)] hover:text-[var(--paper)]"
               }`}
             >
               {p.label}
@@ -99,8 +104,8 @@ export default function PriceChart({ ticker }: Props) {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center h-48 text-gray-600">
-          <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mr-2" />
+        <div className="flex items-center justify-center h-48 text-[var(--paper-vapor)]">
+          <div className="w-5 h-5 border-2 border-[var(--amber)] border-t-transparent rounded-full animate-spin mr-2" />
           Loading chart...
         </div>
       ) : data.length > 0 ? (
@@ -151,31 +156,31 @@ export default function PriceChart({ ticker }: Props) {
               {/* Price line */}
               <Line
                 dataKey="close"
-                stroke={isPositive ? "#10b981" : "#ef4444"}
+                stroke={priceLineColor}
                 strokeWidth={2}
                 dot={false}
-                activeDot={{ r: 4, fill: isPositive ? "#10b981" : "#ef4444" }}
+                activeDot={{ r: 4, fill: priceLineColor }}
               />
             </ComposedChart>
           </ResponsiveContainer>
 
           {/* RSI Chart */}
           <div className="mt-2">
-            <p className="text-xs text-gray-600 mb-1">RSI (14)</p>
+            <p className="text-xs text-[var(--paper-vapor)] mb-1">RSI (14)</p>
             <ResponsiveContainer width="100%" height={80}>
               <ComposedChart data={data} margin={{ top: 0, right: 4, left: 0, bottom: 0 }}>
                 <XAxis dataKey="date" hide />
                 <YAxis domain={[0, 100]} tick={{ fill: "#6b7280", fontSize: 9 }} width={55} ticks={[30, 50, 70]} />
                 <Tooltip content={<CustomTooltip />} />
-                <ReferenceLine y={70} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={1} />
-                <ReferenceLine y={30} stroke="#10b981" strokeDasharray="3 3" strokeWidth={1} />
+                <ReferenceLine y={70} stroke="var(--sell)" strokeDasharray="3 3" strokeWidth={1} />
+                <ReferenceLine y={30} stroke="var(--buy)" strokeDasharray="3 3" strokeWidth={1} />
                 <Line dataKey="rsi" stroke="#f59e0b" strokeWidth={1.5} dot={false} activeDot={{ r: 3 }} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
         </>
       ) : (
-        <p className="text-gray-600 text-sm text-center py-10">No chart data available</p>
+        <p className="text-[var(--paper-vapor)] text-sm text-center py-10">No chart data available</p>
       )}
     </div>
   );

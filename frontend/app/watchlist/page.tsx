@@ -68,38 +68,33 @@ export default function WatchlistPage() {
   const steals = items.filter((i) => i.analysis?.is_absolute_steal).length;
 
   return (
-    <main className="min-h-screen bg-transparent text-white p-8">
+    <main className="min-h-screen bg-transparent text-[var(--paper)] p-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-start justify-between mb-8">
-          <div className="relative">
-            <div className="absolute -top-6 -left-4 w-72 h-28 bg-emerald-500/8 rounded-full blur-3xl pointer-events-none" />
-            <div className="relative">
-              <h1 className="text-4xl font-extrabold mb-1 tracking-tight bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
-                Watchlist
-              </h1>
-              <p className="text-gray-400">Your saved stocks with live analysis</p>
-            </div>
+          <div>
+            <h1 className="serif font-bold text-[var(--paper)] text-4xl tracking-tight mb-1">Watchlist</h1>
+            <p className="text-[var(--paper-fade)]">Your saved stocks with live analysis</p>
           </div>
           <div className="flex flex-col items-end gap-2 mt-2">
             <div className="flex gap-2">
               <button
                 onClick={fetchWatchlist}
                 disabled={loading}
-                className="text-sm px-4 py-2 rounded-lg border border-gray-700 text-gray-400 hover:border-emerald-500 hover:text-emerald-400 transition-colors disabled:opacity-40"
+                className="text-sm px-4 py-2 rounded-none border border-[var(--ink-hairline)] text-[var(--paper-fade)] hover:border-[var(--amber)] hover:text-[var(--amber)] transition-colors disabled:opacity-40"
               >
                 {loading ? "Refreshing…" : "↺ Refresh"}
               </button>
               {items.length > 0 && (
                 <button
                   onClick={() => exportWatchlistCsv(items)}
-                  className="text-sm px-4 py-2 rounded-lg border border-gray-700 text-gray-400 hover:border-emerald-500 hover:text-emerald-400 transition-colors"
+                  className="text-sm px-4 py-2 rounded-none border border-[var(--ink-hairline)] text-[var(--paper-fade)] hover:border-[var(--amber)] hover:text-[var(--amber)] transition-colors"
                 >
                   ↓ Export CSV
                 </button>
               )}
             </div>
             {lastUpdated && (
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-[var(--paper-vapor)]">
                 Updated {lastUpdated.toLocaleTimeString()}
               </p>
             )}
@@ -108,20 +103,20 @@ export default function WatchlistPage() {
 
         {!loading && items.length > 0 && (
           <div className="flex gap-6 mb-8 text-sm">
-            <div className="bg-gray-900 border border-gray-800 rounded-lg px-4 py-3">
-              <p className="text-gray-500">Total</p>
-              <p className="text-2xl font-bold text-white">{items.length}</p>
+            <div className="bg-[var(--ink-surface)] border border-[var(--ink-hairline)] rounded-none px-4 py-3">
+              <p className="text-[var(--paper-fade)]">Total</p>
+              <p className="text-2xl font-bold text-[var(--paper)]">{items.length}</p>
             </div>
-            <div className="bg-gray-900 border border-gray-800 rounded-lg px-4 py-3">
-              <p className="text-gray-500">Strong Buy</p>
-              <p className="text-2xl font-bold text-emerald-400">{strongBuys}</p>
+            <div className="bg-[var(--ink-surface)] border border-[var(--ink-hairline)] rounded-none px-4 py-3">
+              <p className="text-[var(--paper-fade)]">Strong Buy</p>
+              <p className="text-2xl font-bold text-[var(--buy)]">{strongBuys}</p>
             </div>
-            <div className="bg-gray-900 border border-gray-800 rounded-lg px-4 py-3">
-              <p className="text-gray-500">Buy</p>
-              <p className="text-2xl font-bold text-green-400">{buys}</p>
+            <div className="bg-[var(--ink-surface)] border border-[var(--ink-hairline)] rounded-none px-4 py-3">
+              <p className="text-[var(--paper-fade)]">Buy</p>
+              <p className="text-2xl font-bold text-[var(--buy)]">{buys}</p>
             </div>
             {steals > 0 && (
-              <div className="bg-amber-400/5 border border-amber-400/30 rounded-lg px-4 py-3">
+              <div className="bg-amber-400/5 border border-amber-400/30 rounded-none px-4 py-3">
                 <p className="text-amber-500/80">Absolute Steal</p>
                 <p className="text-2xl font-bold text-amber-300">🔥 {steals}</p>
               </div>
@@ -130,13 +125,13 @@ export default function WatchlistPage() {
         )}
 
         {loading && (
-          <div className="flex items-center gap-3 text-gray-400 mt-20 justify-center">
-            <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+          <div className="flex items-center gap-3 text-[var(--paper-fade)] mt-20 justify-center">
+            <div className="w-5 h-5 border-2 border-[var(--amber)] border-t-transparent rounded-full animate-spin" />
             Loading watchlist...
           </div>
         )}
 
-        {error && <p className="text-red-400">{error}</p>}
+        {error && <p className="text-[var(--sell)]">{error}</p>}
 
         <div className="grid grid-cols-1 gap-4">
           {items.map((item) => (
@@ -145,7 +140,7 @@ export default function WatchlistPage() {
         </div>
 
         {!loading && items.length === 0 && !error && (
-          <div className="mt-20 text-center text-gray-600">
+          <div className="mt-20 text-center text-[var(--paper-vapor)]">
             <p className="text-lg">Your watchlist is empty</p>
             <p className="text-sm mt-2">Search for a stock and click "Add to Watchlist"</p>
           </div>
