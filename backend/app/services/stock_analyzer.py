@@ -377,6 +377,49 @@ def _get_insider_activity(stock: yf.Ticker) -> dict:
         return empty
 
 
+def _get_market_regime() -> dict:
+    """
+    Classify market into bull / caution / bear using SPY vs its 50-day and 200-day SMAs.
+    Cached for 60 minutes via the existing stock cache (TTL_MINUTES=60 matches).
+    Fail-open: returns bull on any error so signals are never disrupted by a SPY fetch failure.
+    """
+    _REGIME_KEY = "__MARKET_REGIME__"
+    cached = _cache.get(_REGIME_KEY)
+    if cached:
+        return cached
+
+    try:
+        spy = yf.Ticker("SPY")
+        hist = spy.history(period="1y")
+        if hist.empty:
+            return {"regime": "bull", "spy_price": None, "sma_50": None, "sma_200": None}
+
+        close = hist["Close"]
+        sma_50_val = float(ta.trend.SMAIndicator(close, window=50).sma_indicator().iloc[-1])
+        sma_200_val = float(ta.trend.SMAIndicator(close, window=200).sma_indicator().iloc[-1])
+        spy_price = float(close.iloc[-1])
+
+        if spy_price < sma_200_val:
+            regime = "bear"
+        elif spy_price < sma_50_val:
+            regime = "caution"
+        else:
+            regime = "bull"
+
+        result = {
+            "regime": regime,
+            "spy_price": round(spy_price, 2),
+            "sma_50": round(sma_50_val, 2),
+            "sma_200": round(sma_200_val, 2),
+        }
+        _cache.set(_REGIME_KEY, result)
+        return result
+
+    except Exception as e:
+        print(f"Market regime detection error: {e}")
+        return {"regime": "bull", "spy_price": None, "sma_50": None, "sma_200": None}
+
+
 def get_price_history(ticker: str, period: str = "6mo") -> list:
     valid_periods = {"1mo", "3mo", "6mo", "1y", "2y"}
     if period not in valid_periods:
