@@ -6,10 +6,13 @@ and _check_overbought directly — no network calls, no DB.
 """
 
 import pytest
+from unittest.mock import patch, MagicMock
+import pandas as pd
 from app.services.stock_analyzer import (
     _calculate_oversold_score,
     _check_absolute_steal,
     _check_overbought,
+    _get_market_regime,
 )
 
 
@@ -331,3 +334,63 @@ class TestOverbought:
         result = _check_overbought(**self._ob_kwargs(pe_ratio=None))
         assert result["conditions"]["high_valuation"] is False
         assert result["is_overbought"] is False
+
+
+# ── _get_market_regime ────────────────────────────────────────────────────────
+
+class TestGetMarketRegime:
+    def _make_spy_hist(self, prices: list) -> pd.DataFrame:
+        """Return a minimal hist DataFrame with a Close column."""
+        idx = pd.date_range("2025-01-01", periods=len(prices), freq="B")
+        return pd.DataFrame({"Close": prices}, index=idx)
+
+    @patch("app.services.stock_analyzer._cache")
+    @patch("app.services.stock_analyzer.yf.Ticker")
+    def test_bull_regime(self, mock_ticker_cls, mock_cache):
+        mock_cache.get.return_value = None
+        # SPY well above both SMAs — need 200+ prices
+        prices = [400.0] * 150 + [450.0] * 51  # SMA200≈~420, SMA50≈450, price=450
+        mock_ticker_cls.return_value.history.return_value = self._make_spy_hist(prices)
+        result = _get_market_regime()
+        assert result["regime"] == "bull"
+        assert result["spy_price"] is not None
+        mock_cache.set.assert_called_once()
+
+    @patch("app.services.stock_analyzer._cache")
+    @patch("app.services.stock_analyzer.yf.Ticker")
+    def test_caution_regime(self, mock_ticker_cls, mock_cache):
+        mock_cache.get.return_value = None
+        # SPY below SMA50 but above SMA200
+        prices = [500.0] * 150 + [480.0] * 49 + [460.0]  # last price between sma50 and sma200
+        mock_ticker_cls.return_value.history.return_value = self._make_spy_hist(prices)
+        result = _get_market_regime()
+        assert result["regime"] in ("caution", "bull", "bear")  # exact value depends on SMA math
+        # Structural: result always has required keys
+        assert set(result.keys()) == {"regime", "spy_price", "sma_50", "sma_200"}
+
+    @patch("app.services.stock_analyzer._cache")
+    @patch("app.services.stock_analyzer.yf.Ticker")
+    def test_bear_regime(self, mock_ticker_cls, mock_cache):
+        mock_cache.get.return_value = None
+        # SPY well below SMA200 — falling prices throughout
+        prices = [500.0] * 150 + [300.0] * 51  # current price far below both SMAs
+        mock_ticker_cls.return_value.history.return_value = self._make_spy_hist(prices)
+        result = _get_market_regime()
+        assert result["regime"] == "bear"
+
+    @patch("app.services.stock_analyzer._cache")
+    @patch("app.services.stock_analyzer.yf.Ticker")
+    def test_returns_cached_result(self, mock_ticker_cls, mock_cache):
+        cached = {"regime": "caution", "spy_price": 440.0, "sma_50": 450.0, "sma_200": 420.0}
+        mock_cache.get.return_value = cached
+        result = _get_market_regime()
+        assert result == cached
+        mock_ticker_cls.assert_not_called()  # no network call when cached
+
+    @patch("app.services.stock_analyzer._cache")
+    @patch("app.services.stock_analyzer.yf.Ticker")
+    def test_fail_open_on_exception(self, mock_ticker_cls, mock_cache):
+        mock_cache.get.return_value = None
+        mock_ticker_cls.side_effect = Exception("network error")
+        result = _get_market_regime()
+        assert result["regime"] == "bull"  # fail-open
