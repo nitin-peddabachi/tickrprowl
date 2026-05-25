@@ -49,12 +49,6 @@ export default function Navbar() {
           <span className="serif font-bold text-[var(--paper)] text-2xl tracking-tight leading-none group-hover:text-[var(--amber)] transition-colors">
             Tickr<span className="serif-italic text-[var(--amber)]">prowl</span>
           </span>
-          <span className="text-[var(--paper-vapor)] text-[10px] font-mono uppercase tracking-[0.2em] tabular hidden sm:inline">
-            № 1.1
-          </span>
-          <span className="hidden md:inline text-[var(--paper-vapor)] text-[10px] serif italic">
-            an equity brief
-          </span>
         </Link>
 
         <div className="flex items-center gap-6">

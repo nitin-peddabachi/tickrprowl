@@ -37,10 +37,10 @@ function fmtMarketCap(val: number | null) {
   return `$${(val / 1e6).toFixed(1)}M`;
 }
 
-type SortKey = "oversold_score" | "rsi" | "pct_from_52w_high" | "pe_ratio";
+type SortKey = "oversold_score" | "rsi" | "pct_from_52w_high" | "pe_ratio" | "piotroski_score";
 
 function exportToCsv(stocks: any[]) {
-  const headers = ["Ticker", "Company", "Signal", "Score", "Price", "RSI", "From High %", "P/E", "Fwd P/E", "Rev Growth %", "Profit Margin %", "Sector", "Market Cap", "Absolute Steal"];
+  const headers = ["Ticker", "Company", "Signal", "Score", "Price", "RSI", "From High %", "P/E", "F-Score", "Fwd P/E", "Rev Growth %", "Profit Margin %", "Sector", "Market Cap", "Absolute Steal"];
   const rows = stocks.map(s => [
     s.ticker,
     `"${s.company_name}"`,
@@ -50,6 +50,7 @@ function exportToCsv(stocks: any[]) {
     s.technicals?.rsi?.toFixed(2) ?? "",
     s.pct_from_52w_high?.toFixed(2) ?? "",
     s.fundamentals?.pe_ratio?.toFixed(2) ?? "",
+    s.piotroski?.score ?? "",
     s.fundamentals?.forward_pe?.toFixed(2) ?? "",
     s.fundamentals?.revenue_growth != null ? (s.fundamentals.revenue_growth * 100).toFixed(1) : "",
     s.fundamentals?.profit_margin != null ? (s.fundamentals.profit_margin * 100).toFixed(1) : "",
@@ -114,6 +115,7 @@ export default function ScannerTable({ stocks }: Props) {
     if (key === "rsi") return stock.technicals?.rsi ?? 0;
     if (key === "pct_from_52w_high") return stock.pct_from_52w_high ?? 0;
     if (key === "pe_ratio") return stock.fundamentals?.pe_ratio ?? 9999;
+    if (key === "piotroski_score") return stock.piotroski?.score ?? -1;
     return 0;
   };
 
@@ -122,6 +124,7 @@ export default function ScannerTable({ stocks }: Props) {
   const filtered = (
     filter === "all" ? stocks :
     filter === "Absolute Steal" ? stocks.filter(s => s.is_absolute_steal) :
+    filter === "F≥7" ? stocks.filter(s => (s.piotroski?.score ?? -1) >= 7) :
     stocks.filter(s => s.signal === filter)
   ).filter(s => sectorFilter === "all" || s.sector === sectorFilter);
 
@@ -166,17 +169,21 @@ export default function ScannerTable({ stocks }: Props) {
 
       {/* Filter tabs */}
       <div className="flex flex-wrap gap-2 mb-4">
-        {["all", "Absolute Steal", "Strong Buy", "Buy", "Watch", "Neutral"].map((f) => (
+        {["all", "Absolute Steal", "Strong Buy", "Buy", "F≥7", "Watch", "Neutral"].map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
             className={`px-3 py-1 rounded-none text-xs font-medium transition-colors ${
               filter === f && f === "Absolute Steal"
                 ? "bg-amber-400 text-gray-900"
+                : filter === f && f === "F≥7"
+                ? "bg-[var(--buy)] text-[var(--ink-bg)]"
                 : filter === f
                 ? "bg-[var(--amber)] text-[var(--ink-bg)]"
                 : f === "Absolute Steal"
                 ? "bg-amber-400/10 text-amber-400 hover:bg-amber-400/20"
+                : f === "F≥7"
+                ? "text-[var(--buy)] bg-[var(--buy)]/10 hover:bg-[var(--buy)]/20"
                 : "bg-[var(--ink-raised)] text-[var(--paper-fade)] hover:text-[var(--paper)]"
             }`}
           >
@@ -198,6 +205,7 @@ export default function ScannerTable({ stocks }: Props) {
               <SortHeader label="RSI" col="rsi" />
               <SortHeader label="From High" col="pct_from_52w_high" />
               <SortHeader label="P/E" col="pe_ratio" />
+              <SortHeader label="F-Score" col="piotroski_score" />
               <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--paper-fade)] uppercase tracking-wider">Rev Growth</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--paper-fade)] uppercase tracking-wider">Mkt Cap</th>
             </tr>
@@ -285,6 +293,17 @@ export default function ScannerTable({ stocks }: Props) {
                   {fmt(stock.pct_from_52w_high)}%
                 </td>
                 <td className="px-4 py-3 text-[var(--paper)] font-mono">{fmt(stock.fundamentals?.pe_ratio)}</td>
+                <td className="px-4 py-3 font-mono font-medium">
+                  {stock.piotroski?.score != null ? (
+                    <span className={`text-xs px-1.5 py-0.5 border tabular ${
+                      stock.piotroski.score >= 7 ? "border-[var(--buy)] text-[var(--buy)]" :
+                      stock.piotroski.score <= 2 ? "border-[var(--sell)] text-[var(--sell)]" :
+                      "border-[var(--amber)] text-[var(--amber)]"
+                    }`}>
+                      {stock.piotroski.score}/9
+                    </span>
+                  ) : <span className="text-[var(--paper-vapor)]">—</span>}
+                </td>
                 <td className={`px-4 py-3 font-mono font-medium ${
                   (stock.fundamentals.revenue_growth ?? 0) > 0 ? "text-[var(--buy)]" : "text-[var(--sell)]"
                 }`}>
