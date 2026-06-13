@@ -70,13 +70,14 @@ def record_watchlist_scores():
         db.close()
 
 
-def _was_notified_recently(db, ticker: str, alert_type: str, hours: int = 4) -> bool:
-    """Return True if a notification of this type was already sent for this ticker within the cooldown window."""
+def _was_notified_recently(db, ticker: str, alert_type: str, user_id: str = "", hours: int = 4) -> bool:
+    """Return True if a notification of this type was already sent for this ticker/user within the cooldown window."""
     cutoff = datetime.utcnow() - timedelta(hours=hours)
     return (
         db.query(Notification)
         .filter(
             Notification.ticker == ticker,
+            Notification.user_id == user_id,
             Notification.alert_type == alert_type,
             Notification.triggered_at >= cutoff,
         )
@@ -115,7 +116,7 @@ def check_watchlist_auto_alerts():
             price = analysis["current_price"]
 
             # --- Score >= 70 (Strong Buy) ---
-            if score >= 70 and not _was_notified_recently(db, ticker, "score_above"):
+            if score >= 70 and not _was_notified_recently(db, ticker, "score_above", item.user_id):
                 msg = (
                     f"⚡ Watchlist Alert: {ticker}\n"
                     f"Oversold score hit {score} (Strong Buy)\n"
@@ -131,7 +132,7 @@ def check_watchlist_auto_alerts():
 
             # --- Bullish RSI divergence ---
             divergence = analysis.get("rsi_divergence", {})
-            if divergence.get("detected") and not _was_notified_recently(db, ticker, "rsi_divergence"):
+            if divergence.get("detected") and not _was_notified_recently(db, ticker, "rsi_divergence", item.user_id):
                 msg = (
                     f"📈 Watchlist Alert: {ticker} — Bullish RSI Divergence\n"
                     f"{divergence.get('description', '')}\n"
@@ -146,7 +147,7 @@ def check_watchlist_auto_alerts():
                 print(f"  AUTO ALERT (divergence): {ticker}")
 
             # --- Absolute steal ---
-            if analysis.get("is_absolute_steal") and not _was_notified_recently(db, ticker, "absolute_steal"):
+            if analysis.get("is_absolute_steal") and not _was_notified_recently(db, ticker, "absolute_steal", item.user_id):
                 conditions_met = sum(1 for v in analysis.get("steal_conditions", {}).values() if v)
                 msg = (
                     f"🚨 Watchlist Alert: {ticker} — ABSOLUTE STEAL\n"
