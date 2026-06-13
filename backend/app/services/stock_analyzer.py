@@ -94,8 +94,6 @@ def calculate_dcf_value(stock: yf.Ticker, growth_rate: float = None, discount_ra
         print(f"DCF calculation error: {e}")
         return None
 
-    return None
-
 
 def _calculate_piotroski_fscore(stock: yf.Ticker) -> dict:
     """
@@ -698,6 +696,8 @@ def get_stock_analysis(ticker: str) -> dict:
 
     pct_from_low = round((current_price - price_52w_low) / price_52w_low * 100, 2) if price_52w_low else None
 
+    market_regime = _get_market_regime()
+
     signal_result = _get_signal(
         oversold_score=oversold_score,
         rsi=rsi,
@@ -727,6 +727,7 @@ def get_stock_analysis(ticker: str) -> dict:
         rsi_divergence=rsi_divergence,
         market_cap=market_cap,
         avg_dollar_volume=avg_dollar_volume,
+        market_regime=market_regime,
     )
     signal = signal_result["signal"]
     signal_reasons = signal_result["signal_reasons"]
@@ -813,6 +814,7 @@ def get_stock_analysis(ticker: str) -> dict:
         "is_overbought": overbought["is_overbought"],
         "overbought_conditions": overbought["conditions"],
         "insider_activity": insider_activity,
+        "market_regime": market_regime,
     }
     _cache.set(ticker.upper(), result)
     _record_score(ticker, oversold_score, signal, rsi, current_price)
@@ -1020,6 +1022,7 @@ def _get_signal(
     analyst_rating=None, analyst_count=None, target_price_mean=None,
     volume_ratio=None, obv_trend=None, short_percent_of_float=None,
     rsi_divergence=None, market_cap=None, avg_dollar_volume=None,
+    market_regime: dict = None,
 ) -> dict:
     reasons = []
 
@@ -1036,8 +1039,12 @@ def _get_signal(
 
     if all_overbought:
         signal = "Strong Sell"
-        reasons.append(f"RSI at {rsi:.1f} — deeply overbought territory")
-        reasons.append(f"Stochastic %K at {stoch_k:.1f} — momentum stretched to extremes")
+        if rsi > 70:
+            reasons.append(f"RSI at {rsi:.1f} — deeply overbought territory")
+        if stoch_k > 80:
+            reasons.append(f"Stochastic %K at {stoch_k:.1f} — momentum stretched to extremes")
+        if not (rsi > 70 or stoch_k > 80):
+            reasons.append("Multiple overbought conditions met simultaneously")
         if bb_percent > 0.9:
             reasons.append("Price pressing the upper Bollinger Band")
         if pe_ratio and pe_ratio > 35:
@@ -1112,6 +1119,11 @@ def _get_signal(
 
     elif oversold_score >= 50:
         signal = "Buy"
+        if oversold_score >= 70 and not _check_liquidity(market_cap, avg_dollar_volume):
+            reasons.append(
+                "Score ≥ 70 but below institutional liquidity threshold "
+                "(market cap < $300M or avg daily volume < $1M) — downgraded from Strong Buy"
+            )
         if rsi < 40:
             reasons.append(f"RSI at {rsi:.1f} — moderately oversold")
         elif rsi < 50:
@@ -1167,5 +1179,25 @@ def _get_signal(
         if golden_cross is True and sma_50 is not None and sma_200 is not None:
             reasons.append(f"Golden cross active (SMA 50 ${sma_50:.2f} > SMA 200 ${sma_200:.2f}) — uptrend intact")
         reasons.append("No compelling entry or exit signal at current levels")
+
+    # Market regime signal downgrade
+    _regime = (market_regime or {}).get("regime", "bull")
+    if _regime in ("caution", "bear"):
+        _sma_key = "sma_50" if _regime == "caution" else "sma_200"
+        _sma_label = "50-day" if _regime == "caution" else "200-day"
+        _sma_val = (market_regime or {}).get(_sma_key)
+        _sma_str = f"${_sma_val:.2f}" if _sma_val else _sma_label + " SMA"
+        _regime_label = "Caution" if _regime == "caution" else "Bear market"
+        _prefix = f"{_regime_label}: SPY below {_sma_label} SMA ({_sma_str}) — signal downgraded"
+        if _regime == "caution" and signal == "Strong Buy":
+            signal = "Buy"
+            reasons.insert(0, _prefix)
+        elif _regime == "bear":
+            if signal == "Strong Buy":
+                signal = "Buy"
+                reasons.insert(0, _prefix)
+            elif signal == "Buy":
+                signal = "Watch"
+                reasons.insert(0, _prefix)
 
     return {"signal": signal, "signal_reasons": reasons}

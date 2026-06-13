@@ -97,7 +97,7 @@ def init_db():
         # --- Migrate watchlist: old schema had ticker as sole PK, no user_id ---
         result = conn.execute(text("PRAGMA table_info(watchlist)"))
         watchlist_cols = [row[1] for row in result]
-        if "user_id" not in watchlist_cols:
+        if len(watchlist_cols) > 0 and "user_id" not in watchlist_cols:
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS watchlist_new (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
