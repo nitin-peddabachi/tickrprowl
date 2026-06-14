@@ -13,6 +13,11 @@ export default function Navbar() {
 
   useEffect(() => {
     if (!isSignedIn) return;
+    // User is actively viewing notifications — clear badge immediately
+    if (pathname === "/alerts") {
+      setUnread(0);
+      return;
+    }
     const fetchUnread = async () => {
       try {
         const token = await getToken();
@@ -26,7 +31,7 @@ export default function Navbar() {
     fetchUnread();
     const interval = setInterval(fetchUnread, 60000);
     return () => clearInterval(interval);
-  }, [isSignedIn]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isSignedIn, pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const links = [
     { href: "/",          label: "Search"    },
