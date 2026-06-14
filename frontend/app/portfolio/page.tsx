@@ -93,13 +93,12 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
     form.append("file", file);
     form.append("account_label", accountLabel);
     try {
-      const res = await api.post("/api/portfolio/import", form, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const res = await api.post("/api/portfolio/import", form);
       setResult(`✓ ${res.data.message}`);
       onImported();
-    } catch {
-      setError("Import failed — check the file format.");
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setError(detail ? `Import failed: ${detail}` : "Import failed — check the file format.");
     } finally {
       setImporting(false);
     }
