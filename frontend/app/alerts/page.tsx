@@ -37,7 +37,17 @@ export default function AlertsPage() {
     setNotifications(notifRes.data);
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => {
+    const init = async () => {
+      await fetchAll();
+      // Auto-mark as read now that the user is viewing the page
+      try {
+        await api.post("/api/alerts/notifications/mark-read");
+        setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      } catch {}
+    };
+    init();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const createAlert = async (e: React.FormEvent) => {
     e.preventDefault();
