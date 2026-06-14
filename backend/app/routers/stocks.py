@@ -1,10 +1,13 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 from app.services.stock_analyzer import get_stock_analysis, get_price_history
 from app.models.database import get_db, ScoreHistory
 
+limiter = Limiter(key_func=get_remote_address)
 router = APIRouter()
 
 # Preset lists
@@ -60,7 +63,8 @@ def _fetch_many(ticker_list: list) -> list:
 
 
 @router.get("/batch/scan")
-def scan_stocks(tickers: str):
+@limiter.limit("10/minute")
+def scan_stocks(request: Request, tickers: str):
     """Scan comma-separated tickers, e.g. ?tickers=AAPL,MSFT,TSLA"""
     ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     if len(ticker_list) > 50:
@@ -69,7 +73,8 @@ def scan_stocks(tickers: str):
 
 
 @router.get("/batch/preset/{preset_name}")
-def scan_preset(preset_name: str):
+@limiter.limit("10/minute")
+def scan_preset(request: Request, preset_name: str):
     """Scan a preset list of tickers"""
     ticker_list = PRESETS.get(preset_name)
     if not ticker_list:
@@ -84,7 +89,7 @@ def list_presets():
 
 
 @router.get("/{ticker}/score-history")
-def score_history(ticker: str, days: int = 30, db: Session = Depends(get_db)):
+def score_history(ticker: str, days: int = Query(default=30, ge=1, le=365), db: Session = Depends(get_db)):
     """Return daily oversold score history for the last N days (one point per day, latest wins)."""
     cutoff = datetime.utcnow() - timedelta(days=days)
     rows = (

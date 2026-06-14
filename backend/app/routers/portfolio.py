@@ -160,7 +160,10 @@ def _parse_etrade_row(row: dict, account_label: str) -> dict | None:
 
 
 @router.post("/detect")
-async def detect_broker(file: UploadFile = File(...)):
+async def detect_broker(
+    file: UploadFile = File(...),
+    user_id: str = Depends(get_current_user),
+):
     """Sniff the first line of the CSV and return detected broker."""
     first_chunk = await file.read(2048)
     first_line = first_chunk.decode("utf-8-sig").splitlines()[0]
@@ -176,7 +179,11 @@ async def import_portfolio(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
-    content = (await file.read()).decode("utf-8-sig")
+    MAX_CSV_BYTES = 5 * 1024 * 1024  # 5 MB
+    content_bytes = await file.read(MAX_CSV_BYTES + 1)
+    if len(content_bytes) > MAX_CSV_BYTES:
+        raise HTTPException(status_code=413, detail="File too large — 5 MB limit")
+    content = content_bytes.decode("utf-8-sig")
     clean_lines = [l for l in content.splitlines() if not l.startswith('"')]
     reader = csv.DictReader(io.StringIO("\n".join(clean_lines)))
 

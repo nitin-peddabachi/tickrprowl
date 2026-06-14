@@ -7,6 +7,8 @@ services:
       - tickrprowl_data:/data
     environment:
       - DATABASE_URL=sqlite:////data/tickrprowl.db
+      - CLERK_ISSUER_URL=${CLERK_ISSUER_URL}
+      - FRONTEND_URL=${FRONTEND_URL}
     restart: unless-stopped
 
   frontend:
