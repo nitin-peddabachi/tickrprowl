@@ -18,3 +18,4 @@ Portfolio_Positions_*.csv
 *.portfolio.csv
 ByBenefitType*.csv
 .superpowers/
+docs/superpowers/

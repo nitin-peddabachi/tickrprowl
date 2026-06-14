@@ -108,3 +108,7 @@ Signals: 70+ = Strong Buy, 50+ = Buy, 30+ = Watch, else Neutral
 - Repo: `github.com/nitin-peddabachi/tickrprowl`
 - Branch: `main`
 - Auto-deploys: not configured (runs locally only)
+
+## Conventions
+
+- **Specs and plans** (`docs/superpowers/`) are local-only — never commit them to git. They are gitignored.
