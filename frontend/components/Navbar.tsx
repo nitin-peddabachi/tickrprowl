@@ -50,7 +50,14 @@ export default function Navbar() {
 
       <div className="max-w-6xl mx-auto px-8 flex items-center justify-between">
         {/* ── Masthead ─────────────────────────────────────────────── */}
-        <Link href="/" className="flex items-baseline gap-3 py-5 group">
+        <Link href="/" className="flex items-center gap-2.5 py-5 group">
+          {/* Claw mark icon — amber to match palette */}
+          <svg width="18" height="16" viewBox="0 0 180 150" fill="none" aria-hidden="true" className="shrink-0 opacity-80 group-hover:opacity-100 transition-opacity" style={{ marginBottom: 1 }}>
+            <line x1="28" y1="132" x2="46"  y2="58"  stroke="#d4a574" strokeWidth="22" strokeLinecap="round"/>
+            <line x1="80" y1="132" x2="98"  y2="34"  stroke="#d4a574" strokeWidth="22" strokeLinecap="round"/>
+            <line x1="132" y1="132" x2="150" y2="10" stroke="#d4a574" strokeWidth="22" strokeLinecap="round"/>
+            <line x1="150" y1="10"  x2="176" y2="3"  stroke="#f5c896" strokeWidth="10" strokeLinecap="round"/>
+          </svg>
           <span className="serif font-bold text-[var(--paper)] text-2xl tracking-tight leading-none group-hover:text-[var(--amber)] transition-colors">
             Tickr<span className="serif-italic text-[var(--amber)]">prowl</span>
           </span>

@@ -28,6 +28,7 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "TickrProwl — Oversold Stock Scanner",
   description: "Identify oversold stocks with strong fundamentals",
+  icons: { icon: "/favicon.svg" },
 };
 
 export default function RootLayout({
