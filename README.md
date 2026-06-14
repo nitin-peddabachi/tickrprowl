@@ -1,12 +1,28 @@
-# TickrProwl
+<p align="center">
+  <img src="assets/logo.svg" width="90" alt="Tickrprowl logo">
+</p>
 
-A personal stock analysis app to identify oversold stocks using technical indicators (RSI, Bollinger Bands, Stochastic), fundamentals (DCF, Piotroski F-Score, FCF Yield), and analyst consensus. Supports portfolio tracking via broker CSV imports.
+<h1 align="center">TICKR&middot;PROWL</h1>
 
-## Requirements
+<p align="center">
+  <em>Hunt the market &middot; Find the edge</em>
+</p>
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) — that's it.
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-16-black?logo=next.js" alt="Next.js">
+  <img src="https://img.shields.io/badge/FastAPI-Python_3.9-009688?logo=fastapi" alt="FastAPI">
+  <img src="https://img.shields.io/badge/Docker-required-2496ED?logo=docker" alt="Docker">
+</p>
 
-## Setup
+<br>
+
+Personal stock analysis app for identifying oversold stocks using technical indicators, fundamentals, and analyst consensus. Tracks your portfolio, watchlist, and sends alerts when signals fire.
+
+---
+
+## Quick Start
+
+Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/) — nothing else.
 
 ```bash
 git clone https://github.com/nitin-peddabachi/tickrprowl
@@ -14,61 +30,73 @@ cd tickrprowl
 docker compose up --build
 ```
 
-Then open **http://localhost:3000** in your browser.
-
-The first build takes ~2 minutes. Subsequent starts are fast:
+Open **http://localhost:3000**. First build takes ~2 minutes; subsequent starts are instant.
 
 ```bash
-docker compose up
+docker compose up    # start
+docker compose down  # stop
 ```
 
-To stop:
-
-```bash
-docker compose down
-```
+---
 
 ## Features
 
-- **Search** — look up any stock by ticker or company name for a full analysis
-- **Scanner** — scan a batch of tickers or preset lists (S&P 500 sample, Tech, Value) for oversold signals
-- **Watchlist** — track stocks with notes and target prices; refresh live data on demand
-- **Portfolio** — import your positions and overlay live analysis
-- **Alerts** — set RSI, price, or score alert rules that check every 30 minutes with Telegram push notifications
+| | |
+|---|---|
+| **Search** | Look up any stock by ticker or company name for a full analysis |
+| **Scanner** | Scan batches or preset lists (S&P 500 sample, Tech, Value) for oversold signals |
+| **Watchlist** | Track stocks with notes and target prices; refresh live data on demand |
+| **Portfolio** | Import positions from your broker and overlay live analysis |
+| **Alerts** | RSI, price, or score rules — checked every 30 min with Telegram push notifications |
 
-## Telegram Alerts
+---
 
-Set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` in `backend/.env` to receive push notifications when alerts trigger.
+## Oversold Score (0–100)
 
-## Importing your portfolio
+The core signal. Higher = more oversold, better opportunity.
 
-Go to the **Portfolio** tab and click **Import CSV**.
+| Score | Signal |
+|---|---|
+| 70+ | **Strong Buy** |
+| 50+ | Buy |
+| 30+ | Watch |
+| <30 | Neutral |
+
+Factors: RSI · Stochastic %K · Bollinger Band position · % from 52-week high · SMA 50/200 · MACD · revenue growth · P/E · EV/EBITDA · FCF yield · DCF valuation · Piotroski F-Score · analyst consensus.
+
+---
+
+## Portfolio Import
+
+Go to **Portfolio → Import CSV**.
 
 | Broker | How to export |
 |---|---|
 | Fidelity | Accounts → Portfolio → Positions → Download CSV |
 | Robinhood | Account → Statements & History → Export → Portfolio CSV |
 
-Re-importing replaces only that broker's data — your other accounts are untouched.
+Re-importing replaces only that broker's rows — other accounts are untouched.
 
-## Oversold Score (0–100)
+---
 
-| Score | Signal |
-|---|---|
-| 70+ | Strong Buy |
-| 50+ | Buy |
-| 30+ | Watch |
-| <30 | Neutral |
+## Telegram Alerts
 
-Factors: RSI, Stochastic %K, Bollinger Band position, % from 52-week high, SMA 50/200, MACD, revenue growth, P/E, EV/EBITDA, FCF yield, DCF valuation, Piotroski F-Score, analyst consensus.
+Add to `backend/.env`:
 
-## Data
+```env
+TELEGRAM_BOT_TOKEN=your_token
+TELEGRAM_CHAT_ID=your_chat_id
+```
 
-Your data is stored in a Docker volume on your machine. It persists across restarts and is not shared anywhere.
+Alerts fire when conditions are met, with a 4-hour cooldown per rule.
 
-Stock analysis is cached for 60 minutes to reduce API calls and speed up repeated lookups.
+---
 
-To reset everything:
+## Data & Privacy
+
+Everything lives in a Docker volume on your machine. Nothing is shared externally. Stock data is cached 60 minutes to reduce API calls.
+
+To wipe all data:
 
 ```bash
 docker compose down -v

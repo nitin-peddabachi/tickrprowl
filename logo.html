@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tickrprowl — Logo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --green: #00D97E;
+      --green-bright: #00FF94;
+      --red: #FF3B30;
+      --bg: #0C0C0E;
+      --bg-mid: #141418;
+      --bg-card: #1A1A20;
+      --text: #FFFFFF;
+      --text-dim: rgba(255,255,255,0.35);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      min-height: 100vh;
+    }
+
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 72px 48px 80px;
+    }
+
+    .eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 80px;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 52px;
+      padding-bottom: 80px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    /* ── CLAW MARK ── */
+    /*
+      Three diagonal slashes, each a parallelogram:
+      - Angle: ~65° from horizontal (steep, like a claw swipe)
+      - Spaced evenly left-to-right
+      - Ascending heights: short → medium → tall
+      - The third slash (tallest) terminates with a tiny upward tick
+        suggesting price momentum escaping the mark
+    */
+    .claw-mark svg { display: block; overflow: visible; }
+
+    /* Slash draw-in animation */
+    @keyframes slashIn {
+      from { stroke-dashoffset: 300; opacity: 0; }
+      to   { stroke-dashoffset: 0;   opacity: 1; }
+    }
+
+    @keyframes tickIn {
+      from { stroke-dashoffset: 40; opacity: 0; }
+      to   { stroke-dashoffset: 0;  opacity: 1; }
+    }
+
+    @keyframes wordmarkIn {
+      from { opacity: 0; transform: translateX(-8px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .slash-1 {
+      stroke-dasharray: 300;
+      stroke-dashoffset: 300;
+      animation: slashIn 0.35s cubic-bezier(0.22,1,0.36,1) 0.1s forwards;
+    }
+    .slash-2 {
+      stroke-dasharray: 300;
+      stroke-dashoffset: 300;
+      animation: slashIn 0.35s cubic-bezier(0.22,1,0.36,1) 0.22s forwards;
+    }
+    .slash-3 {
+      stroke-dasharray: 300;
+      stroke-dashoffset: 300;
+      animation: slashIn 0.35s cubic-bezier(0.22,1,0.36,1) 0.34s forwards;
+    }
+    .price-tick {
+      stroke-dasharray: 40;
+      stroke-dashoffset: 40;
+      animation: tickIn 0.25s cubic-bezier(0.22,1,0.36,1) 0.56s forwards;
+    }
+    .wordmark-anim {
+      animation: wordmarkIn 0.5s ease 0.5s both;
+    }
+
+    /* ── WORDMARK ── */
+    .wordmark {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 76px;
+      line-height: 1;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      user-select: none;
+    }
+    .wm-tickr { color: #ffffff; }
+    .wm-sep {
+      display: inline-block;
+      width: 3px;
+      height: 52px;
+      background: var(--green);
+      margin: 0 14px;
+      opacity: 0.5;
+      align-self: center;
+    }
+    .wm-prowl { color: var(--green); }
+
+    .tagline {
+      font-size: 10px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-top: -8px;
+    }
+
+    /* ── SECTION ── */
+    .section {
+      padding: 64px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .section-title {
+      font-size: 9px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 40px;
+    }
+
+    /* ── HORIZONTAL LOCKUP ── */
+    .lockup-h {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+    .lockup-h .wordmark { font-size: 54px; }
+    .lockup-h .wm-sep { height: 38px; }
+
+    /* ── SIZE ROW ── */
+    .sizes-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 56px;
+      flex-wrap: wrap;
+    }
+    .size-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .size-label {
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+
+    /* ── VARIANT GRID ── */
+    .variants-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 2px;
+    }
+    .vcell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 48px 24px;
+      min-height: 200px;
+    }
+    .vcell-label {
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.2);
+    }
+
+    /* ── COLOR SWATCHES ── */
+    .swatches { display: flex; gap: 20px; flex-wrap: wrap; }
+    .swatch { display: flex; flex-direction: column; gap: 10px; }
+    .swatch-box { width: 72px; height: 48px; border-radius: 3px; }
+    .swatch-name { font-size: 10px; color: rgba(255,255,255,0.6); }
+    .swatch-hex  { font-size: 9px;  color: var(--text-dim); letter-spacing: 0.05em; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="eyebrow">Tickrprowl — Brand Identity</div>
+
+  <!-- ════════════════════════════════════
+       HERO — PRIMARY STACKED LOGO
+  ════════════════════════════════════ -->
+  <div class="hero">
+
+    <!-- CLAW MARK (large, animated) -->
+    <div class="claw-mark">
+      <!--
+        Viewbox: 0 0 160 140
+        Three slashes, each is a thick angled stroke (strokeLinecap round).
+        Reading left-to-right they get progressively taller.
+        Slash 1: short,  x=18–34,  y runs 110→58
+        Slash 2: medium, x=62–78,  y runs 110→38
+        Slash 3: tall,   x=106–122, y runs 110→12
+        Then a price-tick at the top of slash 3: a small line angling up-right
+
+        Gap between slashes: ~44px (center-to-center)
+        Each slash width:    ~16px (horizontal span of the stroke endpoints)
+        Angle: roughly 73° from horizontal
+      -->
+      <svg width="200" height="175" viewBox="0 0 160 140" fill="none" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+        <defs>
+          <filter id="slashGlow" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
+            <feColorMatrix in="blur" type="matrix"
+              values="0 0 0 0 0
+                      0 0 0 0 0.851
+                      0 0 0 0 0.494
+                      0 0 0 0.7 0" result="colorBlur"/>
+            <feMerge>
+              <feMergeNode in="colorBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <filter id="tickGlow" x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur"/>
+            <feColorMatrix in="blur" type="matrix"
+              values="0 0 0 0 0
+                      0 0 0 0 1
+                      0 0 0 0 0.58
+                      0 0 0 1 0" result="colorBlur"/>
+            <feMerge>
+              <feMergeNode in="colorBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+
+        <!-- Slash 1 — shortest (left) -->
+        <line class="slash-1"
+              x1="18" y1="112"  x2="34" y2="52"
+              stroke="#00D97E" stroke-width="12" stroke-linecap="round"
+              filter="url(#slashGlow)"/>
+
+        <!-- Slash 2 — medium (center) -->
+        <line class="slash-2"
+              x1="62" y1="112"  x2="78" y2="32"
+              stroke="#00D97E" stroke-width="12" stroke-linecap="round"
+              filter="url(#slashGlow)"/>
+
+        <!-- Slash 3 — tallest (right) -->
+        <line class="slash-3"
+              x1="106" y1="112"  x2="122" y2="8"
+              stroke="#00D97E" stroke-width="12" stroke-linecap="round"
+              filter="url(#slashGlow)"/>
+
+        <!-- Price tick — escaping upward from top of slash 3 -->
+        <!-- This small kink suggests the price has broken out beyond the mark -->
+        <line class="price-tick"
+              x1="122" y1="8"  x2="148" y2="2"
+              stroke="#00FF94" stroke-width="5" stroke-linecap="round"
+              filter="url(#tickGlow)"/>
+      </svg>
+    </div>
+
+    <!-- WORDMARK + TAGLINE -->
+    <div class="wordmark-anim" style="text-align:center; display:flex; flex-direction:column; gap:12px; align-items:center;">
+      <div class="wordmark">
+        <span class="wm-tickr">TICKR</span>
+        <span class="wm-sep"></span>
+        <span class="wm-prowl">PROWL</span>
+      </div>
+      <div class="tagline">Hunt the market · Find the edge</div>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════
+       HORIZONTAL LOCKUP
+  ════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">Horizontal Lockup</div>
+    <div class="lockup-h">
+      <svg width="80" height="70" viewBox="0 0 160 140" fill="none" overflow="visible">
+        <line x1="18"  y1="112" x2="34"  y2="52"  stroke="#00D97E" stroke-width="14" stroke-linecap="round"/>
+        <line x1="62"  y1="112" x2="78"  y2="32"  stroke="#00D97E" stroke-width="14" stroke-linecap="round"/>
+        <line x1="106" y1="112" x2="122" y2="8"   stroke="#00D97E" stroke-width="14" stroke-linecap="round"/>
+        <line x1="122" y1="8"   x2="148" y2="2"   stroke="#00FF94" stroke-width="6"  stroke-linecap="round"/>
+      </svg>
+      <div>
+        <div class="wordmark" style="font-size:54px;">
+          <span class="wm-tickr">TICKR</span>
+          <span class="wm-sep" style="height:38px;"></span>
+          <span class="wm-prowl">PROWL</span>
+        </div>
+        <div class="tagline" style="text-align:left; margin-top:8px;">Hunt the market · Find the edge</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════
+       ICON — SIZE SCALE
+  ════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">Icon Mark — Sizes</div>
+    <div class="sizes-row">
+
+      <div class="size-item">
+        <svg width="80" height="70" viewBox="0 0 160 140" fill="none" overflow="visible">
+          <line x1="18"  y1="112" x2="34"  y2="52"  stroke="#00D97E" stroke-width="14" stroke-linecap="round"/>
+          <line x1="62"  y1="112" x2="78"  y2="32"  stroke="#00D97E" stroke-width="14" stroke-linecap="round"/>
+          <line x1="106" y1="112" x2="122" y2="8"   stroke="#00D97E" stroke-width="14" stroke-linecap="round"/>
+          <line x1="122" y1="8"   x2="148" y2="2"   stroke="#00FF94" stroke-width="6"  stroke-linecap="round"/>
+        </svg>
+        <div class="size-label">80px</div>
+      </div>
+
+      <div class="size-item">
+        <svg width="48" height="42" viewBox="0 0 160 140" fill="none" overflow="visible">
+          <line x1="18"  y1="112" x2="34"  y2="52"  stroke="#00D97E" stroke-width="16" stroke-linecap="round"/>
+          <line x1="62"  y1="112" x2="78"  y2="32"  stroke="#00D97E" stroke-width="16" stroke-linecap="round"/>
+          <line x1="106" y1="112" x2="122" y2="8"   stroke="#00D97E" stroke-width="16" stroke-linecap="round"/>
+          <line x1="122" y1="8"   x2="148" y2="2"   stroke="#00FF94" stroke-width="7"  stroke-linecap="round"/>
+        </svg>
+        <div class="size-label">48px</div>
+      </div>
+
+      <div class="size-item">
+        <svg width="32" height="28" viewBox="0 0 160 140" fill="none" overflow="visible">
+          <line x1="18"  y1="112" x2="34"  y2="52"  stroke="#00D97E" stroke-width="20" stroke-linecap="round"/>
+          <line x1="62"  y1="112" x2="78"  y2="32"  stroke="#00D97E" stroke-width="20" stroke-linecap="round"/>
+          <line x1="106" y1="112" x2="122" y2="8"   stroke="#00D97E" stroke-width="20" stroke-linecap="round"/>
+          <line x1="122" y1="8"   x2="148" y2="2"   stroke="#00FF94" stroke-width="9"  stroke-linecap="round"/>
+        </svg>
+        <div class="size-label">32px</div>
+      </div>
+
+      <div class="size-item">
+        <svg width="20" height="18" viewBox="0 0 160 140" fill="none" overflow="visible">
+          <line x1="18"  y1="112" x2="34"  y2="52"  stroke="#00D97E" stroke-width="28" stroke-linecap="round"/>
+          <line x1="62"  y1="112" x2="78"  y2="32"  stroke="#00D97E" stroke-width="28" stroke-linecap="round"/>
+          <line x1="106" y1="112" x2="122" y2="8"   stroke="#00D97E" stroke-width="28" stroke-linecap="round"/>
+        </svg>
+        <div class="size-label">20px</div>
+      </div>
+
+      <div class="size-item">
+        <svg width="16" height="14" viewBox="0 0 160 140" fill="none" overflow="visible">
+          <line x1="18"  y1="112" x2="34"  y2="52"  stroke="#00D97E" stroke-width="32" stroke-linecap="round"/>
+          <line x1="62"  y1="112" x2="78"  y2="32"  stroke="#00D97E" stroke-width="32" stroke-linecap="round"/>
+          <line x1="106" y1="112" x2="122" y2="8"   stroke="#00D97E" stroke-width="32" stroke-linecap="round"/>
+        </svg>
+        <div class="size-label">16px</div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════
+       VARIANTS
+  ════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">Variants</div>
+    <div class="variants-grid">
+
+      <!-- Dark primary -->
+      <div class="vcell" style="background:#0C0C0E;">
+        <svg width="64" height="56" viewBox="0 0 160 140" fill="none" overflow="visible">
+          <line x1="18"  y1="112" x2="34"  y2="52"  stroke="#00D97E" stroke-width="14" stroke-linecap="round"/>
+          <line x1="62"  y1="112" x2="78"  y2="32"  stroke="#00D97E" stroke-width="14" stroke-linecap="round"/>
+          <line x1="106" y1="112" x2="122" y2="8"   stroke="#00D97E" stroke-width="14" stroke-linecap="round"/>
+          <line x1="122" y1="8"   x2="148" y2="2"   stroke="#00FF94" stroke-width="6"  stroke-linecap="round"/>
+        </svg>
+        <div class="wordmark" style="font-size:28px;">
+          <span class="wm-tickr">TICKR</span>
+          <span class="wm-sep" style="height:20px; margin:0 10px;"></span>
+          <span class="wm-prowl">PROWL</span>
+        </div>
+        <div class="vcell-label">Dark</div>
+      </div>
+
+      <!-- Deep green -->
+      <div class="vcell" style="background:#071A10;">
+        <svg width="64" height="56" viewBox="0 0 160 140" fill="none" overflow="visible">
+          <line x1="18"  y1="112" x2="34"  y2="52"  stroke="#00D97E" stroke-width="14" stroke-linecap="round"/>
+          <line x1="62"  y1="112" x2="78"  y2="32"  stroke="#00D97E" stroke-width="14" stroke-linecap="round"/>
+          <line x1="106" y1="112" x2="122" y2="8"   stroke="#00D97E" stroke-width="14" stroke-linecap="round"/>
+          <line x1="122" y1="8"   x2="148" y2="2"   stroke="#00FF94" stroke-width="6"  stroke-linecap="round"/>
+        </svg>
+        <div class="wordmark" style="font-size:28px;">
+          <span class="wm-tickr">TICKR</span>
+          <span class="wm-sep" style="height:20px; margin:0 10px;"></span>
+          <span class="wm-prowl">PROWL</span>
+        </div>
+        <div class="vcell-label">Forest</div>
+      </div>
+
+      <!-- Light -->
+      <div class="vcell" style="background:#F2F5F2;">
+        <svg width="64" height="56" viewBox="0 0 160 140" fill="none" overflow="visible">
+          <line x1="18"  y1="112" x2="34"  y2="52"  stroke="#059652" stroke-width="14" stroke-linecap="round"/>
+          <line x1="62"  y1="112" x2="78"  y2="32"  stroke="#059652" stroke-width="14" stroke-linecap="round"/>
+          <line x1="106" y1="112" x2="122" y2="8"   stroke="#059652" stroke-width="14" stroke-linecap="round"/>
+          <line x1="122" y1="8"   x2="148" y2="2"   stroke="#00A862" stroke-width="6"  stroke-linecap="round"/>
+        </svg>
+        <div class="wordmark" style="font-size:28px;">
+          <span style="color:#111827; font-family:'Barlow Condensed',sans-serif; font-weight:800;">TICKR</span>
+          <span class="wm-sep" style="height:20px; margin:0 10px; background:#059652;"></span>
+          <span style="color:#059652; font-family:'Barlow Condensed',sans-serif; font-weight:800;">PROWL</span>
+        </div>
+        <div class="vcell-label" style="color:rgba(0,0,0,0.25);">Light</div>
+      </div>
+
+      <!-- White on black (app icon bg) -->
+      <div class="vcell" style="background:#111111;">
+        <svg width="64" height="56" viewBox="0 0 160 140" fill="none" overflow="visible">
+          <line x1="18"  y1="112" x2="34"  y2="52"  stroke="#FFFFFF" stroke-width="14" stroke-linecap="round"/>
+          <line x1="62"  y1="112" x2="78"  y2="32"  stroke="#FFFFFF" stroke-width="14" stroke-linecap="round"/>
+          <line x1="106" y1="112" x2="122" y2="8"   stroke="#FFFFFF" stroke-width="14" stroke-linecap="round"/>
+          <line x1="122" y1="8"   x2="148" y2="2"   stroke="#00FF94" stroke-width="6"  stroke-linecap="round"/>
+        </svg>
+        <div class="wordmark" style="font-size:28px; color:white;">
+          <span style="color:white; font-family:'Barlow Condensed',sans-serif; font-weight:800;">TICKR</span>
+          <span class="wm-sep" style="height:20px; margin:0 10px; background:rgba(255,255,255,0.3);"></span>
+          <span style="color:white; font-family:'Barlow Condensed',sans-serif; font-weight:800;">PROWL</span>
+        </div>
+        <div class="vcell-label">Monochrome</div>
+      </div>
+
+      <!-- Icon-only dark -->
+      <div class="vcell" style="background:#0C0C0E;">
+        <svg width="80" height="70" viewBox="0 0 160 140" fill="none" overflow="visible">
+          <line x1="18"  y1="112" x2="34"  y2="52"  stroke="#00D97E" stroke-width="14" stroke-linecap="round"/>
+          <line x1="62"  y1="112" x2="78"  y2="32"  stroke="#00D97E" stroke-width="14" stroke-linecap="round"/>
+          <line x1="106" y1="112" x2="122" y2="8"   stroke="#00D97E" stroke-width="14" stroke-linecap="round"/>
+          <line x1="122" y1="8"   x2="148" y2="2"   stroke="#00FF94" stroke-width="6"  stroke-linecap="round"/>
+        </svg>
+        <div class="vcell-label">Icon Only</div>
+      </div>
+
+      <!-- App icon tile -->
+      <div class="vcell" style="background:#0C0C0E; padding: 20px;">
+        <!-- Simulate rounded square app icon -->
+        <div style="
+          width: 96px; height: 96px;
+          background: #111115;
+          border-radius: 22px;
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 8px 32px rgba(0,0,0,0.5);
+        ">
+          <svg width="56" height="49" viewBox="0 0 160 140" fill="none" overflow="visible">
+            <line x1="18"  y1="112" x2="34"  y2="52"  stroke="#00D97E" stroke-width="16" stroke-linecap="round"/>
+            <line x1="62"  y1="112" x2="78"  y2="32"  stroke="#00D97E" stroke-width="16" stroke-linecap="round"/>
+            <line x1="106" y1="112" x2="122" y2="8"   stroke="#00D97E" stroke-width="16" stroke-linecap="round"/>
+            <line x1="122" y1="8"   x2="148" y2="2"   stroke="#00FF94" stroke-width="7"  stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="vcell-label">App Icon</div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════
+       COLOR PALETTE
+  ════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">Brand Colors</div>
+    <div class="swatches">
+      <div class="swatch">
+        <div class="swatch-box" style="background:#0C0C0E; border:1px solid rgba(255,255,255,0.07);"></div>
+        <div class="swatch-name">Void</div>
+        <div class="swatch-hex">#0C0C0E</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-box" style="background:#00D97E;"></div>
+        <div class="swatch-name">Strike Green</div>
+        <div class="swatch-hex">#00D97E</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-box" style="background:#00FF94;"></div>
+        <div class="swatch-name">Breakout</div>
+        <div class="swatch-hex">#00FF94</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-box" style="background:#059652;"></div>
+        <div class="swatch-name">Emerald</div>
+        <div class="swatch-hex">#059652</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-box" style="background:#FF3B30;"></div>
+        <div class="swatch-name">Bearish Red</div>
+        <div class="swatch-hex">#FF3B30</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-box" style="background:#F2F5F2; border:1px solid rgba(0,0,0,0.06);"></div>
+        <div class="swatch-name">Ghost</div>
+        <div class="swatch-hex">#F2F5F2</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:40px 0 0; color:var(--text-dim); font-size:9px; letter-spacing:0.2em; text-transform:uppercase;">
+    Tickrprowl — Brand Identity 2026
+  </div>
+
+</div>
+</body>
+</html>
