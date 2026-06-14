@@ -14,3 +14,6 @@ python-multipart==0.0.20
 slowapi==0.1.9
 pytest>=8.0
 pytest-asyncio>=0.24
+transformers>=4.40.0
+torch>=2.2.0
+feedparser>=6.0.11
