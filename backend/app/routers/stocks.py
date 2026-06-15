@@ -51,15 +51,52 @@ def search_stocks(q: str):
     return matches
 
 
+def _fetch_news_summary(ticker: str) -> dict:
+    """Fetch news with cache for use inside the batch scanner."""
+    key = f"{ticker}:news"
+    cached = _cache.get(key)
+    if cached is not None:
+        return cached
+    result = news_service.fetch_news(ticker)
+    _cache.set(key, result)
+    return result
+
+
 def _fetch_many(ticker_list: list) -> list:
-    """Fetch analysis for a list of tickers in parallel (up to 8 workers)."""
-    results = []
+    """Fetch analysis + news sentiment for a list of tickers in parallel."""
+    analysis_by_ticker: dict[str, dict] = {}
+    news_by_ticker: dict[str, dict] = {}
+
     with ThreadPoolExecutor(max_workers=5) as executor:
-        futures = {executor.submit(get_stock_analysis, ticker): ticker for ticker in ticker_list}
-        for future in as_completed(futures):
+        analysis_futures = {executor.submit(get_stock_analysis, t): t for t in ticker_list}
+        news_futures = {executor.submit(_fetch_news_summary, t): t for t in ticker_list}
+
+        for future in as_completed(analysis_futures):
             data = future.result()
             if "error" not in data:
-                results.append(data)
+                analysis_by_ticker[data["ticker"]] = data
+
+        for future in as_completed(news_futures):
+            ticker = news_futures[future]
+            try:
+                news_by_ticker[ticker] = future.result()
+            except Exception:
+                news_by_ticker[ticker] = None
+
+    results = []
+    for ticker, data in analysis_by_ticker.items():
+        ns = news_by_ticker.get(ticker)
+        data["news_sentiment"] = (
+            {
+                "score": ns["sentiment_score"],
+                "label": ns["label"],
+                "article_count": ns["article_count"],
+            }
+            if ns and ns.get("sentiment_score") is not None
+            else None
+        )
+        results.append(data)
+
     results.sort(key=lambda x: x["oversold_score"], reverse=True)
     return results
 
