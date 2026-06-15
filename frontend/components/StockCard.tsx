@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { useApi } from "@/lib/api";
+import { useApi, publicApi } from "@/lib/api";
 import PriceChart from "@/components/PriceChart";
 import ScoreHistoryChart from "@/components/ScoreHistoryChart";
 
@@ -224,6 +224,21 @@ export default function StockCard({ stock }: Props) {
   const animatedScore = useCountUp(stock.oversold_score);
   const [activeTab, setActiveTab] = useState<Tab>("technicals");
   const api = useApi();
+  const [newsSentiment, setNewsSentiment] = useState<any>(null);
+  const [newsLoading, setNewsLoading] = useState(true);
+  const [showAllNews, setShowAllNews] = useState(false);
+
+  useEffect(() => {
+    if (!stock?.ticker) return;
+    setNewsLoading(true);
+    setNewsSentiment(null);
+    setShowAllNews(false);
+    publicApi
+      .get(`/api/stocks/${stock.ticker}/news`)
+      .then((r) => setNewsSentiment(r.data))
+      .catch(() => {})
+      .finally(() => setNewsLoading(false));
+  }, [stock?.ticker]);
 
   const addToWatchlist = async () => {
     setWatchlistStatus("adding");
@@ -413,6 +428,97 @@ export default function StockCard({ stock }: Props) {
               <span>70</span>
               <span>100</span>
             </div>
+          </div>
+
+          {/* ── News Sentiment ─────────────────────────────────────── */}
+          <div className="mt-6 pt-5 border-t border-[var(--ink-divider)]">
+            <div className="eyebrow mb-3 flex items-center gap-2">
+              <span>News Sentiment</span>
+              <span className="flex-1 h-px bg-[var(--ink-divider)]" />
+              {!newsLoading && newsSentiment && (
+                <span className="text-[var(--paper-vapor)] font-mono tabular text-[9px]">
+                  {newsSentiment.article_count} articles · FinBERT
+                </span>
+              )}
+            </div>
+
+            {newsLoading && (
+              <div className="h-6 bg-[var(--ink-raised)] animate-pulse rounded" />
+            )}
+
+            {!newsLoading && (!newsSentiment || newsSentiment.sentiment_score === null) && (
+              <p className="text-[var(--paper-vapor)] text-[11px] font-mono">No recent news</p>
+            )}
+
+            {!newsLoading && newsSentiment && newsSentiment.sentiment_score !== null && (
+              <>
+                {/* Score + counts row */}
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="flex items-baseline gap-2">
+                    <span className={`font-mono font-bold text-3xl tabular ${
+                      newsSentiment.label === "Bullish" ? "text-[var(--buy)]" :
+                      newsSentiment.label === "Bearish" ? "text-[var(--sell)]" :
+                      "text-[var(--amber)]"
+                    }`}>
+                      {newsSentiment.sentiment_score}
+                    </span>
+                    <span className={`text-[10px] font-mono uppercase tracking-widest ${
+                      newsSentiment.label === "Bullish" ? "text-[var(--buy)]" :
+                      newsSentiment.label === "Bearish" ? "text-[var(--sell)]" :
+                      "text-[var(--amber)]"
+                    }`}>
+                      {newsSentiment.label}
+                    </span>
+                  </div>
+                  <div className="flex gap-1.5 text-[10px] font-mono">
+                    <span className="text-[var(--buy)]">{newsSentiment.counts.positive}▲</span>
+                    <span className="text-[var(--paper-vapor)]">·</span>
+                    <span className="text-[var(--sell)]">{newsSentiment.counts.negative}▼</span>
+                    <span className="text-[var(--paper-vapor)]">·</span>
+                    <span className="text-[var(--paper-fade)]">{newsSentiment.counts.neutral}—</span>
+                  </div>
+                </div>
+
+                {/* Mini headlines */}
+                <div className="flex flex-col gap-0 border-t border-[var(--ink-divider)]">
+                  {(showAllNews
+                    ? newsSentiment.articles
+                    : newsSentiment.articles.slice(0, 4)
+                  ).map((article: any, i: number) => (
+                    <a
+                      key={i}
+                      href={article.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-start gap-2.5 py-2.5 border-b border-[var(--ink-divider)] last:border-0 hover:bg-[var(--ink-raised)] transition-colors -mx-1 px-1"
+                    >
+                      <span className={`font-mono text-[11px] mt-px flex-shrink-0 ${
+                        article.sentiment === "positive" ? "text-[var(--buy)]" :
+                        article.sentiment === "negative" ? "text-[var(--sell)]" :
+                        "text-[var(--amber)]"
+                      }`}>
+                        {article.sentiment === "positive" ? "▲" : article.sentiment === "negative" ? "▼" : "—"}
+                      </span>
+                      <span className="text-[11px] text-[var(--paper-dim)] leading-snug flex-1">
+                        {article.headline}
+                      </span>
+                      <span className="text-[9px] font-mono text-[var(--paper-vapor)] flex-shrink-0 mt-px">
+                        {article.age_label}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+
+                {newsSentiment.articles.length > 4 && (
+                  <button
+                    onClick={() => setShowAllNews(!showAllNews)}
+                    className="mt-2 text-[10px] font-mono uppercase tracking-[0.15em] text-[var(--paper-fade)] hover:text-[var(--amber)] transition-colors"
+                  >
+                    {showAllNews ? "Show less ↑" : `See all ${newsSentiment.articles.length} →`}
+                  </button>
+                )}
+              </>
+            )}
           </div>
 
           {stock.subscores && (
