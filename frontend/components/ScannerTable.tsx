@@ -37,7 +37,7 @@ function fmtMarketCap(val: number | null) {
   return `$${(val / 1e6).toFixed(1)}M`;
 }
 
-type SortKey = "oversold_score" | "rsi" | "pct_from_52w_high" | "pe_ratio" | "piotroski_score";
+type SortKey = "oversold_score" | "rsi" | "pct_from_52w_high" | "pe_ratio" | "piotroski_score" | "news_sentiment_score";
 
 function exportToCsv(stocks: any[]) {
   const headers = ["Ticker", "Company", "Signal", "Score", "Price", "RSI", "From High %", "P/E", "F-Score", "Fwd P/E", "Rev Growth %", "Profit Margin %", "Sector", "Market Cap", "Absolute Steal"];
@@ -116,6 +116,7 @@ export default function ScannerTable({ stocks }: Props) {
     if (key === "pct_from_52w_high") return stock.pct_from_52w_high ?? 0;
     if (key === "pe_ratio") return stock.fundamentals?.pe_ratio ?? 9999;
     if (key === "piotroski_score") return stock.piotroski?.score ?? -1;
+    if (key === "news_sentiment_score") return stock.news_sentiment?.score ?? -1;
     return 0;
   };
 
@@ -200,6 +201,7 @@ export default function ScannerTable({ stocks }: Props) {
               <th className="px-3 py-3" />
               <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--paper-fade)] uppercase tracking-wider">Stock</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--paper-fade)] uppercase tracking-wider">Signal</th>
+              <SortHeader label="Sentiment" col="news_sentiment_score" />
               <SortHeader label="Score" col="oversold_score" />
               <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--paper-fade)] uppercase tracking-wider">Price</th>
               <SortHeader label="RSI" col="rsi" />
@@ -263,6 +265,22 @@ export default function ScannerTable({ stocks }: Props) {
                       </span>
                     )}
                   </div>
+                </td>
+                <td className="px-4 py-3">
+                  {stock.news_sentiment ? (
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono rounded-sm ${
+                      stock.news_sentiment.label === "Bullish"
+                        ? "bg-[var(--buy)]/10 text-[var(--buy)]"
+                        : stock.news_sentiment.label === "Bearish"
+                        ? "bg-[var(--sell)]/10 text-[var(--sell)]"
+                        : "bg-[var(--amber)]/10 text-[var(--amber)]"
+                    }`}>
+                      {stock.news_sentiment.label === "Bullish" ? "▲" : stock.news_sentiment.label === "Bearish" ? "▼" : "—"}
+                      {" "}{stock.news_sentiment.score}
+                    </span>
+                  ) : (
+                    <span className="text-[var(--paper-vapor)]">—</span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
