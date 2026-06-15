@@ -1,4 +1,5 @@
 import logging
+import threading
 import time
 from datetime import datetime, timezone
 
@@ -9,16 +10,19 @@ from transformers import pipeline
 logger = logging.getLogger(__name__)
 
 _finbert = None
+_finbert_lock = threading.Lock()
 
 
 def _get_finbert():
     global _finbert
     if _finbert is None:
-        _finbert = pipeline(
-            "text-classification",
-            model="ProsusAI/finbert",
-            top_k=None,
-        )
+        with _finbert_lock:
+            if _finbert is None:
+                _finbert = pipeline(
+                    "text-classification",
+                    model="ProsusAI/finbert",
+                    top_k=None,
+                )
     return _finbert
 
 
@@ -43,7 +47,8 @@ def _fetch_yf_news(ticker: str) -> list[dict]:
         for item in raw:
             content = item.get("content", {})
             headline = content.get("title") or item.get("title", "")
-            url = content.get("canonicalUrl", {}).get("url") or item.get("link", "")
+            canonical = content.get("canonicalUrl")
+            url = canonical.get("url") if isinstance(canonical, dict) else (canonical or item.get("link", ""))
             provider = content.get("provider", {}).get("displayName", "") or item.get("publisher", "")
             pub_date = content.get("pubDate") or ""
             if pub_date:
@@ -122,6 +127,8 @@ def _score_articles(articles: list[dict]) -> list[dict]:
             raw_results = finbert(headline[:512])
             # With top_k=None and a single string input, pipeline returns [[{...}, ...]]
             results = raw_results[0] if raw_results and isinstance(raw_results[0], list) else raw_results
+            if not results:
+                continue
             # results is a list of dicts: [{"label": "positive", "score": 0.91}, ...]
             best = max(results, key=lambda x: x["score"])
             label = best["label"].lower()   # "positive" | "negative" | "neutral"
@@ -129,6 +136,7 @@ def _score_articles(articles: list[dict]) -> list[dict]:
             # Apply confidence threshold
             if confidence < 0.60:
                 label = "neutral"
+                confidence = 0.5  # treat as equally-weighted neutral signal
             scored.append({
                 **article,
                 "sentiment": label,
@@ -169,16 +177,26 @@ def fetch_news(ticker: str) -> dict:
             "sentiment_score": None,
             "label": None,
             "article_count": len(combined),
-            "counts": {"bullish": 0, "bearish": 0, "neutral": 0},
+            "counts": {"positive": 0, "negative": 0, "neutral": 0},
             "sources": [],
-            "articles": combined,
+            "articles": [],
         }
 
     scored = _score_articles(combined)
+    if len(scored) < 3:
+        return {
+            "sentiment_score": None,
+            "label": None,
+            "article_count": len(scored),
+            "counts": {"positive": 0, "negative": 0, "neutral": 0},
+            "sources": [],
+            "articles": scored,
+        }
+
     sentiment_score, label = _compute_score(scored)
     counts = {
-        "bullish": sum(1 for a in scored if a["sentiment"] == "positive"),
-        "bearish": sum(1 for a in scored if a["sentiment"] == "negative"),
+        "positive": sum(1 for a in scored if a["sentiment"] == "positive"),
+        "negative": sum(1 for a in scored if a["sentiment"] == "negative"),
         "neutral": sum(1 for a in scored if a["sentiment"] == "neutral"),
     }
     sources = sorted({a["source"] for a in scored if a["source"]})
