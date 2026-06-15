@@ -5,6 +5,8 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 from app.services.stock_analyzer import get_stock_analysis, get_price_history
+from app.services import news_service
+from app.services import cache as _cache
 from app.models.database import get_db, ScoreHistory
 
 limiter = Limiter(key_func=get_remote_address)
@@ -112,6 +114,19 @@ def price_history(ticker: str, period: str = "6mo"):
     if not data:
         raise HTTPException(status_code=404, detail=f"No history found for {ticker}")
     return data
+
+
+@router.get("/{ticker}/news")
+@limiter.limit("20/minute")
+def get_stock_news(request: Request, ticker: str):
+    """Return FinBERT-scored news headlines and aggregate sentiment score."""
+    key = f"{ticker.upper()}:news"
+    cached = _cache.get(key)
+    if cached is not None:
+        return cached
+    result = news_service.fetch_news(ticker.upper())
+    _cache.set(key, result)
+    return result
 
 
 @router.get("/{ticker}")
