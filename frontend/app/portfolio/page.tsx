@@ -8,7 +8,7 @@ import { useApi } from "@/lib/api";
 const BROKER_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   fidelity:    { label: "Fidelity",     color: "text-[var(--buy)]",    bg: "bg-[var(--buy)]/10 border-[var(--buy)]/30"  },
   etrade:      { label: "E*Trade",      color: "text-blue-400",        bg: "bg-blue-400/10 border-blue-400/30"          },
-  etrade_espp: { label: "E*Trade",      color: "text-blue-400",        bg: "bg-blue-400/10 border-blue-400/30"          },
+  etrade_plan: { label: "E*Trade",      color: "text-blue-400",        bg: "bg-blue-400/10 border-blue-400/30"          },
 };
 
 const CASH_SYMBOLS = new Set(["SPAXX", "FDRXX", "FCASH", "CORE**", "MMDA1", "MMDA4", "SWEEP", "PENDING"]);
@@ -63,7 +63,7 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
       const firstLine = (e.target?.result as string).split("\n")[0] || "";
       const headers = firstLine.split(",").map(h => h.trim().replace(/^"|"$/g, ""));
       const broker = headers.includes("Purchased Qty.") || headers.includes("Est. Market Value")
-        ? "etrade_espp"
+        ? "etrade_plan"
         : headers.includes("Market Value") || headers.includes("Unit Cost")
         ? "etrade"
         : "fidelity";

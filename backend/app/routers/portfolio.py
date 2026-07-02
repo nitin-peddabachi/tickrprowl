@@ -38,12 +38,12 @@ def _detect_broker(headers: list[str]) -> str:
     if "Market Value" in header_set or "Unit Cost" in header_set:
         return "etrade"
     if "Purchased Qty." in header_set or "Est. Market Value" in header_set:
-        return "etrade_espp"
+        return "etrade_plan"
     return "fidelity"
 
 
-def _parse_espp_row(row: dict) -> dict | None:
-    """Parse one row from an E*Trade ESPP ByBenefitType CSV."""
+def _parse_etrade_plan_row(row: dict) -> dict | None:
+    """Parse one row from an E*Trade stock plan ByBenefitType CSV."""
     if row.get("Record Type", "").strip() != "Purchase":
         return None
     symbol = row.get("Symbol", "").strip()
@@ -66,7 +66,7 @@ def _parse_espp_row(row: dict) -> dict | None:
 
     return dict(
         broker="etrade",
-        account_number="ESPP",
+        account_number="etrade_plan",
         account_name=f"E*Trade Plan ({purchase_date})" if purchase_date else "E*Trade Plan",
         ticker=symbol.upper(),
         company_name="",
@@ -213,8 +213,8 @@ async def import_portfolio(
     for row in reader:
         if broker == "etrade":
             parsed = _parse_etrade_row(row, account_label)
-        elif broker == "etrade_espp":
-            parsed = _parse_espp_row(row)
+        elif broker == "etrade_plan":
+            parsed = _parse_etrade_plan_row(row)
         else:
             parsed = _parse_fidelity_row(row)
         if parsed:
@@ -227,11 +227,11 @@ async def import_portfolio(
             PortfolioPosition.broker == "etrade",
             PortfolioPosition.account_name == (account_label or "E*Trade"),
         ).delete()
-    elif broker == "etrade_espp":
+    elif broker == "etrade_plan":
         db.query(PortfolioPosition).filter(
             PortfolioPosition.user_id == user_id,
             PortfolioPosition.broker == "etrade",
-            PortfolioPosition.account_number == "ESPP",
+            PortfolioPosition.account_number == "etrade_plan",
         ).delete()
     else:
         db.query(PortfolioPosition).filter(
