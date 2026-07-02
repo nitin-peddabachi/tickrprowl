@@ -212,6 +212,7 @@ export default function PortfolioPage() {
   const [sortKey, setSortKey] = useState("current_value");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [confirmClear, setConfirmClear] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const api = useApi();
 
   const fetchPortfolio = async () => {
@@ -230,12 +231,14 @@ export default function PortfolioPage() {
 
   const clearPortfolio = async () => {
     setError("");
+    setClearing(true);
     try {
       await api.delete("/api/portfolio/");
       await fetchPortfolio();
     } catch {
       setError("Failed to clear portfolio.");
     } finally {
+      setClearing(false);
       setConfirmClear(false);
     }
   };
@@ -339,12 +342,15 @@ export default function PortfolioPage() {
                     <span className="text-[var(--paper-fade)] text-xs">Sure?</span>
                     <button
                       onClick={clearPortfolio}
-                      className="px-3 py-2 rounded-none border border-[var(--sell)]/50 text-[var(--sell)] hover:bg-[var(--sell)]/10 transition-colors"
+                      disabled={clearing}
+                      aria-label="Confirm clear portfolio"
+                      className="px-3 py-2 rounded-none border border-[var(--sell)]/50 text-[var(--sell)] hover:bg-[var(--sell)]/10 transition-colors disabled:opacity-50"
                     >
-                      Yes
+                      {clearing ? "Clearing…" : "Yes"}
                     </button>
                     <button
                       onClick={() => setConfirmClear(false)}
+                      aria-label="Cancel clear portfolio"
                       className="px-3 py-2 rounded-none border border-[var(--ink-hairline)] text-[var(--paper-fade)] hover:text-[var(--paper)] transition-colors"
                     >
                       No
@@ -353,9 +359,10 @@ export default function PortfolioPage() {
                 ) : (
                   <button
                     onClick={() => setConfirmClear(true)}
+                    aria-label="Clear portfolio"
                     className="text-sm px-4 py-2 rounded-none border border-[var(--ink-hairline)] text-[var(--sell)]/70 hover:border-[var(--sell)]/50 hover:text-[var(--sell)] transition-colors"
                   >
-                    ✕ Clear
+                    <span aria-hidden="true">✕</span> Clear
                   </button>
                 )
               )}
