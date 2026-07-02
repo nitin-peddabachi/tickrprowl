@@ -211,6 +211,7 @@ export default function PortfolioPage() {
   const [brokerFilter, setBrokerFilter] = useState("all");
   const [sortKey, setSortKey] = useState("current_value");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [confirmClear, setConfirmClear] = useState(false);
   const api = useApi();
 
   const fetchPortfolio = async () => {
@@ -224,6 +225,18 @@ export default function PortfolioPage() {
       setError("Failed to load portfolio. Is the backend running?");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const clearPortfolio = async () => {
+    setError("");
+    try {
+      await api.delete("/api/portfolio/");
+      await fetchPortfolio();
+    } catch {
+      setError("Failed to clear portfolio.");
+    } finally {
+      setConfirmClear(false);
     }
   };
 
@@ -320,6 +333,32 @@ export default function PortfolioPage() {
               >
                 ↑ Import CSV
               </button>
+              {positions.length > 0 && (
+                confirmClear ? (
+                  <div className="flex items-center gap-1 text-sm">
+                    <span className="text-[var(--paper-fade)] text-xs">Sure?</span>
+                    <button
+                      onClick={clearPortfolio}
+                      className="px-3 py-2 rounded-none border border-[var(--sell)]/50 text-[var(--sell)] hover:bg-[var(--sell)]/10 transition-colors"
+                    >
+                      Yes
+                    </button>
+                    <button
+                      onClick={() => setConfirmClear(false)}
+                      className="px-3 py-2 rounded-none border border-[var(--ink-hairline)] text-[var(--paper-fade)] hover:text-[var(--paper)] transition-colors"
+                    >
+                      No
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmClear(true)}
+                    className="text-sm px-4 py-2 rounded-none border border-[var(--ink-hairline)] text-[var(--sell)]/70 hover:border-[var(--sell)]/50 hover:text-[var(--sell)] transition-colors"
+                  >
+                    ✕ Clear
+                  </button>
+                )
+              )}
             </div>
             {lastUpdated && (
               <p className="text-xs text-[var(--paper-vapor)]">Updated {lastUpdated.toLocaleTimeString()}</p>
