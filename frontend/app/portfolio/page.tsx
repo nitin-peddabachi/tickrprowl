@@ -11,7 +11,7 @@ const BROKER_CONFIG: Record<string, { label: string; color: string; bg: string }
   etrade_espp: { label: "E*Trade ESPP", color: "text-purple-400",      bg: "bg-purple-400/10 border-purple-400/30"      },
 };
 
-const CASH_SYMBOLS = new Set(["SPAXX", "FDRXX", "FCASH", "CORE**", "MMDA1", "MMDA4", "SWEEP"]);
+const CASH_SYMBOLS = new Set(["SPAXX", "FDRXX", "FCASH", "CORE**", "MMDA1", "MMDA4", "SWEEP", "PENDING"]);
 
 const SECTOR_COLORS = [
   "var(--amber)","#3b82f6","#f59e0b","#8b5cf6",
@@ -289,6 +289,7 @@ export default function PortfolioPage() {
   // Sector allocation
   const sectorMap: Record<string, number> = {};
   for (const p of filtered) {
+    if (p.ticker === "PENDING") continue;
     const sector = p.analysis?.sector || "Unknown";
     sectorMap[sector] = (sectorMap[sector] || 0) + (p.current_value || 0);
   }
@@ -421,7 +422,7 @@ export default function PortfolioPage() {
               </div>
               <div className="bg-[var(--ink-surface)] border border-[var(--ink-hairline)] rounded-none px-5 py-4">
                 <p className="text-[var(--paper-fade)] text-xs uppercase tracking-wider mb-1">Positions</p>
-                <p className="text-2xl font-bold text-[var(--paper)] font-mono">{filtered.length}</p>
+                <p className="text-2xl font-bold text-[var(--paper)] font-mono">{filtered.filter(p => p.ticker !== "PENDING").length}</p>
                 {brokers.length > 1 && (
                   <p className="text-xs text-[var(--paper-vapor)] mt-0.5">{brokers.length} brokers</p>
                 )}
@@ -614,8 +615,12 @@ export default function PortfolioPage() {
                           ) : "—"}
                         </td>
                         {/* Value */}
-                        <td className="px-4 py-3 text-[var(--paper)] font-semibold font-mono text-xs">
-                          {p.current_value ? `$${p.current_value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
+                        <td className={`px-4 py-3 font-semibold font-mono text-xs ${p.current_value != null && p.current_value < 0 ? "text-[var(--sell)]" : "text-[var(--paper)]"}`}>
+                          {p.current_value != null ? (
+                            p.current_value < 0
+                              ? `-$${Math.abs(p.current_value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                              : `$${p.current_value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                          ) : "—"}
                         </td>
                         {/* G/L $ */}
                         <td className={`px-4 py-3 font-mono text-xs font-medium ${glPos ? "text-[var(--buy)]" : "text-[var(--sell)]"}`}>
@@ -632,6 +637,8 @@ export default function PortfolioPage() {
                               <span className="opacity-60 text-[10px]">{sig.icon}</span>
                               {a.signal}
                             </span>
+                          ) : p.ticker === "PENDING" ? (
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-none bg-yellow-500/10 text-yellow-500">Pending</span>
                           ) : isCash ? (
                             <span className="text-xs font-semibold px-2 py-0.5 rounded-none bg-blue-400/10 text-blue-400">Cash</span>
                           ) : <span className="text-[var(--paper-vapor)] text-xs">—</span>}

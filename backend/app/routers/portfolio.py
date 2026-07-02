@@ -83,10 +83,29 @@ def _parse_espp_row(row: dict) -> dict | None:
 def _parse_fidelity_row(row: dict) -> dict | None:
     """Parse one row from a Fidelity positions CSV."""
     symbol = row.get("Symbol", "").strip()
-    if not symbol or symbol in SKIP_SYMBOLS or "Pending" in symbol:
+    if not symbol or symbol in SKIP_SYMBOLS:
         return None
     if not row.get("Account Number", "").strip():
         return None
+
+    if "Pending" in symbol:
+        current_value = _parse_money(row.get("Current Value", ""))
+        if current_value is None:
+            return None
+        return dict(
+            broker="fidelity",
+            account_number=row.get("Account Number", "").strip(),
+            account_name=row.get("Account Name", "").strip(),
+            ticker="PENDING",
+            company_name="Pending Activity",
+            shares=None,
+            avg_cost=None,
+            cost_basis_total=None,
+            last_price=None,
+            current_value=current_value,
+            total_gl_dollar=None,
+            total_gl_pct=None,
+        )
 
     is_cash = symbol in CASH_SYMBOLS
     shares = _parse_money(row.get("Quantity", ""))
