@@ -65,9 +65,9 @@ def _parse_espp_row(row: dict) -> dict | None:
     purchase_date = row.get("Purchase Date", "").strip()
 
     return dict(
-        broker="etrade_espp",
+        broker="etrade",
         account_number="ESPP",
-        account_name=f"E*Trade ESPP ({purchase_date})" if purchase_date else "E*Trade ESPP",
+        account_name=f"E*Trade Plan ({purchase_date})" if purchase_date else "E*Trade Plan",
         ticker=symbol.upper(),
         company_name="",
         shares=net_shares,
@@ -230,7 +230,8 @@ async def import_portfolio(
     elif broker == "etrade_espp":
         db.query(PortfolioPosition).filter(
             PortfolioPosition.user_id == user_id,
-            PortfolioPosition.broker == "etrade_espp",
+            PortfolioPosition.broker == "etrade",
+            PortfolioPosition.account_number == "ESPP",
         ).delete()
     else:
         db.query(PortfolioPosition).filter(

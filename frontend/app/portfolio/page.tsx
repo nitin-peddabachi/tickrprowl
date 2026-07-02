@@ -8,7 +8,7 @@ import { useApi } from "@/lib/api";
 const BROKER_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   fidelity:    { label: "Fidelity",     color: "text-[var(--buy)]",    bg: "bg-[var(--buy)]/10 border-[var(--buy)]/30"  },
   etrade:      { label: "E*Trade",      color: "text-blue-400",        bg: "bg-blue-400/10 border-blue-400/30"          },
-  etrade_espp: { label: "E*Trade ESPP", color: "text-purple-400",      bg: "bg-purple-400/10 border-purple-400/30"      },
+  etrade_espp: { label: "E*Trade",      color: "text-blue-400",        bg: "bg-blue-400/10 border-blue-400/30"          },
 };
 
 const CASH_SYMBOLS = new Set(["SPAXX", "FDRXX", "FCASH", "CORE**", "MMDA1", "MMDA4", "SWEEP", "PENDING"]);
