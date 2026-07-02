@@ -58,6 +58,10 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
   const dropRef = useRef<HTMLDivElement>(null);
 
   const detectBroker = (f: File) => {
+    if (f.name.toLowerCase().endsWith(".xlsx")) {
+      setDetectedBroker("etrade_plan");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (e) => {
       const firstLine = (e.target?.result as string).split("\n")[0] || "";
@@ -127,7 +131,7 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
           <input
             id="portfolio-file-input"
             type="file"
-            accept=".csv"
+            accept=".csv,.xlsx"
             className="hidden"
             onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
           />

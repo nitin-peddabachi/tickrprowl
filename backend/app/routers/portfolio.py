@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import csv
 import io
+import openpyxl
 from app.models.database import get_db, PortfolioPosition
 from app.services.stock_analyzer import get_stock_analysis
 from app.dependencies.auth import get_current_user
@@ -18,8 +19,12 @@ SKIP_SYMBOLS = {"FCASH**", "FDRXX**", "SPAXX**", "FDRXX**"}
 CASH_SYMBOLS = {"SPAXX", "FDRXX", "FCASH", "CORE**", "MMDA1", "MMDA4", "SWEEP"}
 
 
-def _parse_money(val: str):
+def _parse_money(val):
     """Strip broker formatting ($, +, %, commas, parens for negatives) and return float or None."""
+    if val is None:
+        return None
+    if isinstance(val, (int, float)):
+        return float(val)
     if not val or val.strip() in ("--", "", "N/A", "n/a"):
         return None
     cleaned = val.strip().replace("$", "").replace(",", "").replace("+", "").replace("%", "")
@@ -178,6 +183,67 @@ def _parse_etrade_row(row: dict, account_label: str) -> dict | None:
     )
 
 
+def _xlsx_row_to_dict(headers: list, raw_row: tuple) -> dict:
+    """Convert an openpyxl row tuple to a string-keyed dict, keeping first non-None for duplicate headers."""
+    result: dict = {}
+    for i, v in enumerate(raw_row):
+        if i >= len(headers):
+            break
+        key = headers[i]
+        if key not in result or result[key] is None:
+            result[key] = str(v) if isinstance(v, str) else v
+    return result
+
+
+def _parse_rsu_row(row: dict) -> dict | None:
+    """Parse a Grant row from the Restricted Stock sheet of an E*Trade XLSX."""
+    if str(row.get("Record Type", "")).strip() != "Grant":
+        return None
+    symbol = str(row.get("Symbol", "") or "").strip()
+    if not symbol:
+        return None
+    shares = _parse_money(row.get("Granted Qty."))
+    current_value = _parse_money(row.get("Est. Market Value"))
+    if not shares or not current_value:
+        return None
+    grant_date = str(row.get("Grant Date", "") or "").strip()
+    return dict(
+        broker="etrade",
+        account_number="etrade_plan",
+        account_name=f"E*Trade Plan (RSU {grant_date})" if grant_date else "E*Trade Plan (RSU)",
+        ticker=symbol.upper(),
+        company_name="",
+        shares=shares,
+        avg_cost=0.0,
+        cost_basis_total=0.0,
+        last_price=round(current_value / shares, 4) if shares else None,
+        current_value=current_value,
+        total_gl_dollar=current_value,
+        total_gl_pct=None,
+    )
+
+
+def _parse_etrade_plan_xlsx(content_bytes: bytes) -> list[dict]:
+    """Parse all sheets from an E*Trade stock plan XLSX and return position dicts."""
+    wb = openpyxl.load_workbook(io.BytesIO(content_bytes), read_only=True, data_only=True)
+    results = []
+    for ws in wb.worksheets:
+        rows = list(ws.iter_rows(values_only=True))
+        if not rows:
+            continue
+        headers = [str(h).strip() if h is not None else "" for h in rows[0]]
+        sheet_name = ws.title.lower()
+        for raw_row in rows[1:]:
+            row = _xlsx_row_to_dict(headers, raw_row)
+            if "restricted" in sheet_name:
+                parsed = _parse_rsu_row(row)
+            else:
+                parsed = _parse_etrade_plan_row(row)
+            if parsed:
+                results.append(parsed)
+    return results
+
+
 @router.post("/detect")
 async def detect_broker(
     file: UploadFile = File(...),
@@ -198,27 +264,31 @@ async def import_portfolio(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
-    MAX_CSV_BYTES = 5 * 1024 * 1024  # 5 MB
-    content_bytes = await file.read(MAX_CSV_BYTES + 1)
-    if len(content_bytes) > MAX_CSV_BYTES:
+    MAX_FILE_BYTES = 5 * 1024 * 1024  # 5 MB
+    content_bytes = await file.read(MAX_FILE_BYTES + 1)
+    if len(content_bytes) > MAX_FILE_BYTES:
         raise HTTPException(status_code=413, detail="File too large — 5 MB limit")
-    content = content_bytes.decode("utf-8-sig")
-    clean_lines = [l for l in content.splitlines() if not l.startswith('"')]
-    reader = csv.DictReader(io.StringIO("\n".join(clean_lines)))
 
-    headers = reader.fieldnames or []
-    broker = _detect_broker(list(headers))
-
-    positions_data = []
-    for row in reader:
-        if broker == "etrade":
-            parsed = _parse_etrade_row(row, account_label)
-        elif broker == "etrade_plan":
-            parsed = _parse_etrade_plan_row(row)
-        else:
-            parsed = _parse_fidelity_row(row)
-        if parsed:
-            positions_data.append(parsed)
+    filename = (file.filename or "").lower()
+    if filename.endswith(".xlsx"):
+        positions_data = _parse_etrade_plan_xlsx(content_bytes)
+        broker = "etrade_plan"
+    else:
+        content = content_bytes.decode("utf-8-sig")
+        clean_lines = [l for l in content.splitlines() if not l.startswith('"')]
+        reader = csv.DictReader(io.StringIO("\n".join(clean_lines)))
+        headers = reader.fieldnames or []
+        broker = _detect_broker(list(headers))
+        positions_data = []
+        for row in reader:
+            if broker == "etrade":
+                parsed = _parse_etrade_row(row, account_label)
+            elif broker == "etrade_plan":
+                parsed = _parse_etrade_plan_row(row)
+            else:
+                parsed = _parse_fidelity_row(row)
+            if parsed:
+                positions_data.append(parsed)
 
     # Smart clear: replace only the imported broker's data for this user
     if broker == "etrade" and account_label:
