@@ -98,7 +98,7 @@ def _parse_fidelity_row(row: dict) -> dict | None:
             account_name=row.get("Account Name", "").strip(),
             ticker="PENDING",
             company_name="Pending Activity",
-            shares=None,
+            shares=0,
             avg_cost=None,
             cost_basis_total=None,
             last_price=None,
